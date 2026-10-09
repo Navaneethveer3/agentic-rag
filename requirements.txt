@@ -1,0 +1,14 @@
+langchain
+langchain_community
+langgraph
+langsmith
+langchain-google-genai
+langchain_tavily
+python-dotenv
+langchain-mcp-adapters
+mcp
+pypdf
+pymupdf
+langchain-pinecone
+pinecone
+sentence-transformers
