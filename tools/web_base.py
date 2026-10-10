@@ -14,7 +14,7 @@ import asyncio
 
 load_dotenv()
 
-# @tool
+@tool
 def search_web_base(url : list[str]):
     """web url search to retrieve data"""
     loader = WebBaseLoader(
@@ -28,17 +28,17 @@ def search_web_base(url : list[str]):
     raw_docs = loader.load()
     raw_data = [doc.page_content for doc in raw_docs]
 
-    splitter = text_splitter()
+    # splitter = text_splitter()
 
-    chunks = splitter.split_documents(raw_docs)
+    # chunks = splitter.split_documents(raw_docs)
 
-    vector_store = load_vector_store("tester1")[0]
+    # vector_store = load_vector_store("tester1")[0]
 
-    vector_store.add_documents(documents=chunks)
+    # vector_store.add_documents(documents=chunks)
 
     print("chunks loaded successfully")
 
-    return raw_docs
+    return raw_data
 
 urls = ["https://docs.langchain.com/oss/python/langgraph/overview", 
         "https://docs.langchain.com/oss/python/langgraph/add-memory",
