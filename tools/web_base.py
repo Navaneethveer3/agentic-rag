@@ -15,7 +15,7 @@ import asyncio
 load_dotenv()
 
 @tool
-def search_web_base(url : list[str]):
+def search_web_url(url : list[str]):
     """Web url search to retrieve data.
        This tool retrieves the information from the web and stores it in database.
        After performing the tool, search the database and answer the query.

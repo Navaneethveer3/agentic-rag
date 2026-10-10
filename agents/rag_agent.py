@@ -7,9 +7,9 @@ import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import create_agent
-from tools.web_base import search_web_base
+from tools.web_base import search_web_url
 from tools.kb_search import search_knowledge_base
-
+from tools.tavily_web_search import web_search
 
 load_dotenv()
 
@@ -21,8 +21,9 @@ model = ChatGoogleGenerativeAI(
 )
 
 tools = [
-    search_web_base,
-    search_knowledge_base
+    search_web_url,
+    search_knowledge_base,
+    web_search
 ]
 
 agent = create_agent(
