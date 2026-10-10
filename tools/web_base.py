@@ -16,7 +16,10 @@ load_dotenv()
 
 @tool
 def search_web_base(url : list[str]):
-    """web url search to retrieve data"""
+    """Web url search to retrieve data.
+       This tool retrieves the information from the web and stores it in database.
+       After performing the tool, search the database and answer the query.
+    """
     loader = WebBaseLoader(
         web_paths=tuple(url),
         requests_kwargs = {
@@ -28,21 +31,19 @@ def search_web_base(url : list[str]):
     raw_docs = loader.load()
     raw_data = [doc.page_content for doc in raw_docs]
 
-    # splitter = text_splitter()
+    splitter = text_splitter()
 
-    # chunks = splitter.split_documents(raw_docs)
+    chunks = splitter.split_documents(raw_docs)
 
-    # vector_store = load_vector_store("tester1")[0]
+    vector_store = load_vector_store("tester1")[0]
 
-    # vector_store.add_documents(documents=chunks)
+    vector_store.add_documents(documents=chunks)
 
     print("chunks loaded successfully")
 
-    return raw_data
-
-urls = ["https://docs.langchain.com/oss/python/langgraph/overview", 
-        "https://docs.langchain.com/oss/python/langgraph/add-memory",
-        "https://docs.langchain.com/oss/python/langgraph/use-subgraphs"]
+# urls = ["https://docs.langchain.com/oss/python/langgraph/overview", 
+#         "https://docs.langchain.com/oss/python/langgraph/add-memory",
+#         "https://docs.langchain.com/oss/python/langgraph/use-subgraphs"]
 
 
-search_web_base(urls)
+# search_web_base(urls)

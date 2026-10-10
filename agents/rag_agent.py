@@ -30,5 +30,5 @@ agent = create_agent(
     tools=tools
 )
 
-def load_model():
+def load_agent():
     return agent
