@@ -7,7 +7,10 @@ load_dotenv()
 
 os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
 
-search = TavilySearch(max_results=3)
+search = TavilySearch(max_results=3,
+include_answer=True,
+include_raw_content=False,
+)
 
 @tool
 def search_web(query : str):
