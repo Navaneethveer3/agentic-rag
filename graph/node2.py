@@ -12,4 +12,5 @@ def retrieve_kb(state : AgentState):
     query = state["current_query"]
     docs = retriever.invoke(query)
 
+    print("---DOCUMENTS RETRIEVED---\n\n")
     return {"kb_docs" : docs}

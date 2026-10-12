@@ -30,6 +30,8 @@ def route_question(state : AgentState):
     """
     )
 
+    print("LLM STARTED\n\n")
+
     return {
         "current_query" : question,
         "source_used" : decision.route
@@ -38,6 +40,8 @@ def route_question(state : AgentState):
 
 def route_after_decision(state : AgentState):
     if state["source_used"]=="kb":
+        print("Decision routed : KB\n\n")
         return "retrieve_kb"
     else:
+        print("Decision routed : DIRECT\n\n")
         return "direct_answer"
