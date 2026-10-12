@@ -4,6 +4,7 @@ from langchain_core.documents import Document
 
 
 class AgentState(TypedDict):
+    username : str
     question : str
     current_query : str
     kb_docs : List[Document]

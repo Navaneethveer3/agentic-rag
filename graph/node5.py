@@ -46,6 +46,10 @@ def decide_after_web_grade(state : AgentState):
     if state["web_grade"]=="good":
         print("Decided to generate from web\n\n")
         return "generate_from_web"
+    
+    if state["retry_count"]<MAX_RETRIES:
+        print("---INITIALIZING RETRY---\n\n")
+        return "rewrite_query"
     else:
         print("Decided to rewrite the query\n\n")
-        return "rewrite_query"
+        return "insufficient_evidence"

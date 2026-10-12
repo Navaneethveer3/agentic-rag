@@ -12,6 +12,8 @@ def answer_insufficient(state : AgentState):
         "Please provide more specific documents or rephrase the question."
     )
 
+    print("---DATA INSUFFICIENT---")
+
     return {
         "answer" : answer,
         "source_used" : "insufficient_evidence"

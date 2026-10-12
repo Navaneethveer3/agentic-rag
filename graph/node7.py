@@ -6,7 +6,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from agents.rag_agent import load_model
 from states.agent_state import AgentState
 
-model = load_model
+model = load_model()
 
 def generate_from_kb(state : AgentState):
     question = state["question"]
@@ -34,7 +34,7 @@ def generate_from_kb(state : AgentState):
     {context}
     """).content
 
-    print("---ANSWERED FROM KNOWLEDGE BASE---")
+    print("---ANSWERING FROM KNOWLEDGE BASE---")
 
     return {
         "answer" : answer,

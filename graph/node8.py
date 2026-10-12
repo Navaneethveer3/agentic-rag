@@ -33,6 +33,8 @@ def generate_from_web(state : AgentState):
     {web_context}
     """).content
 
+    print("---ANSWERING FROM WEB")
+
     return {
         "answer" : answer,
         "source_used" : "web_search"

@@ -18,6 +18,8 @@ def direct_answer(state : AgentState):
     {question}
     """).content
 
+    print("---ANSWERING DIRECTLY---")
+
     return {
         "answer" : answer,
         "source_used" : "direct"

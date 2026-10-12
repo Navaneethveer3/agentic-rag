@@ -12,7 +12,7 @@ include_answer=True,
 include_raw_content=False,
 )
 
-@tool
+# @tool
 def web_search(query : str):
     """search web without url"""
 

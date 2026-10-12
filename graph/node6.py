@@ -23,9 +23,7 @@ def rewrite_query(state : AgentState):
 
     Original question:
     {question}
-    ''').content.strip()
-
-    """)
+    """).content.strip()
 
     print("---QUERY REWRITTEN---")
 
