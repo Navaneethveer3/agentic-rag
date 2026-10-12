@@ -5,13 +5,18 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 
 from agents.rag_agent import load_agent
+from states.agent_state import AgentState
 from langchain.messages import SystemMessage, HumanMessage, ToolMessage
+from build_graph import build_graph
+
 
 def main() -> None:
     print("Hello from rag-project!")
 
 
 agent = load_agent()
+
+graph = build_graph()
 
 def chat_with_agent(username : str, query : str):
 
@@ -35,7 +40,34 @@ def chat_with_agent(username : str, query : str):
 
     return final_response
     
+def ask_agent(query : str):
+    initial_state : AgentState = {
+        "username" : "tester1",
+        "question" : query,
+        "current_query" : query,
+        "kb_docs" : [],
+        "web_results" : "",
+        "kb_grade" : "",
+        "web_grade" : "",
+        "answer" : "",
+        "source_used" : "",
+        "retry_count" : 0,
+    }
+
+    response = graph.invoke(initial_state)
+
+    print("\n"+"="*100)
+
+    print(f"\nQuestion : {query}")
+    print(f"\nSource used : {response["source_used"]}")
+    print(f"\nAnswer : {response["answer"]}")
+
+    print("\n"+"="*100)
+
+    
+
+    return response
 
 
-query = "can you tell me how to manage short term memory from this https://docs.langchain.com/oss/python/langgraph/add-memory"
-chat_with_agent("tester1", query)
+
+result = ask_agent("Hi, how do I manage short term memory in LangGraph?")

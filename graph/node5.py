@@ -52,4 +52,4 @@ def decide_after_web_grade(state : AgentState):
         return "rewrite_query"
     else:
         print("Decided to rewrite the query\n\n")
-        return "insufficient_evidence"
+        return "answer_insufficient"

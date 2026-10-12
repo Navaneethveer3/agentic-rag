@@ -16,5 +16,5 @@ def search_web(state : AgentState):
 
     return {
         "web_results" : result,
-        "source" : "web"
+        "source_used" : "web"
     }
