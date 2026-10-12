@@ -13,7 +13,7 @@ include_raw_content=False,
 )
 
 @tool
-def search_web(query : str):
+def web_search(query : str):
     """search web without url"""
 
     response = search.invoke({"query" : query})
