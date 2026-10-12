@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from states.route_decision import RouteDecision
 from states.agent_state import AgentState
 from agents.rag_agent import load_model
