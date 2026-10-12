@@ -12,7 +12,7 @@ model = load_model()
 decision_llm = model.with_structured_output(GradeEvidence, method="json_mode")
 
 def grade_kb_evidence(state : AgentState):
-    question = state["current_query"]
+    question = state["question"]
 
     context = "\n\n".join(
         f"Source: {doc.metadata.get("source")}\n{doc.page_content}"
