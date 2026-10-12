@@ -32,8 +32,7 @@ def generate_from_kb(state : AgentState):
 
     Private KB context:
     {context}
-    ''').content
-    """)
+    """).content
 
     print("---ANSWERED FROM KNOWLEDGE BASE---")
 
