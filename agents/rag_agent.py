@@ -33,3 +33,6 @@ agent = create_agent(
 
 def load_agent():
     return agent
+
+def load_model():
+    return model
