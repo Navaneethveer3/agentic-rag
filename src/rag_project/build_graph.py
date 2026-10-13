@@ -17,7 +17,7 @@ from graph.node9 import direct_answer
 from graph.node10 import answer_insufficient
 
 
-def build_graph():
+def build_graph(checkpointer=None):
     workflow = StateGraph(AgentState)
 
     # Nodes
@@ -62,6 +62,6 @@ def build_graph():
     workflow.add_edge("direct_answer", END)
     workflow.add_edge("answer_insufficient", END)
 
-    graph = workflow.compile()
+    graph = workflow.compile(checkpointer=checkpointer)
 
     return graph
