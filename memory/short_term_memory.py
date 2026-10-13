@@ -5,7 +5,6 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from agents.rag_agent import load_model
 from langgraph.checkpoint.postgres import PostgresSaver
-from langchain_core.utils.uuid import uuid7
 from langchain.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END, MessagesState
 import os
