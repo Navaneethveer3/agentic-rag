@@ -5,22 +5,23 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from states.agent_state import AgentState
 from agents.rag_agent import load_model
+from langchain.messages import AIMessage, SystemMessage
 
 model = load_model()
 
 def direct_answer(state : AgentState):
     question = state["question"]
 
-    answer = model.invoke(f"""
-    Respond briefly and naturally.
+    system_prompt = SystemMessage("Response briefly and naturally\n")
 
-    Message:
-    {question}
-    """).content
+    full_conversation = [system_prompt] + state["messages"]
+
+    answer = model.invoke(full_conversation).content
 
     print("---ANSWERING DIRECTLY---")
 
     return {
         "answer" : answer,
-        "source_used" : "direct"
+        "source_used" : "direct",
+        "messages" : [AIMessage(answer)]
     }

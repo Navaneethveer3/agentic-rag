@@ -5,6 +5,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from states.agent_state import AgentState
 from agents.rag_agent import load_model
+from langchain.messages import AIMessage
 
 model = load_model()
 
@@ -37,6 +38,7 @@ def generate_from_web(state : AgentState):
 
     return {
         "answer" : answer,
-        "source_used" : "web_search"
+        "source_used" : "web_search",
+        "messages" : [AIMessage(answer)]
     }
 

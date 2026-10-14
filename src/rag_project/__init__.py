@@ -8,7 +8,15 @@ from agents.rag_agent import load_agent
 from states.agent_state import AgentState
 from langchain.messages import SystemMessage, HumanMessage, ToolMessage
 from build_graph import build_graph
+from memory.chat_manager import *
+from langgraph.checkpoint.postgres import PostgresSaver
+from contextlib import contextmanager
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+
+DB_URL = os.getenv("DB_URL")
 
 def main() -> None:
     print("Hello from rag-project!")
@@ -16,35 +24,21 @@ def main() -> None:
 
 agent = load_agent()
 
-graph = build_graph()
+@contextmanager
+def load_connection():
+    with PostgresSaver.from_conn_string(DB_URL) as checkpoint:
+        checkpoint.setup()
+        yield checkpoint
 
-def chat_with_agent(username : str, query : str):
 
-    system_prompt = f"""
-                    You are a helpful helpdesk agent.
-                    You have access to tools to retrieve information and answer user queries.
-                    You have username : {username} to perform certain tools that require username.
-                    Strictly answer with what information and tools you have.
-                    Never try to answer on your own.
-                    If you don't know the answer, just tell 'I don't have enough information'
-                    """
-    messages = [
-        SystemMessage(system_prompt),
-        HumanMessage(query)
-    ]
 
-    response = agent.invoke({"messages" : messages})
-
-    final_response = response["messages"][-1]
-    final_response.pretty_print()
-
-    return final_response
     
-def ask_agent(query : str):
+def ask_agent(username : str, query : str, config : dict):
     initial_state : AgentState = {
-        "username" : "tester1",
+        "username" : username,
         "question" : query,
         "current_query" : query,
+        "messages" : [HumanMessage(query)],
         "kb_docs" : [],
         "web_results" : "",
         "kb_grade" : "",
@@ -54,20 +48,31 @@ def ask_agent(query : str):
         "retry_count" : 0,
     }
 
-    response = graph.invoke(initial_state)
+    with load_connection() as checkpoint:
+        graph = build_graph(checkpoint)
 
-    print("\n"+"="*100)
+        response = graph.invoke(initial_state, config=config)
 
-    print(f"\nQuestion : {query}")
-    print(f"\nSource used : {response["source_used"]}")
-    print(f"\nAnswer : {response["answer"]}")
+        print("\n"+"="*100)
 
-    print("\n"+"="*100)
+        print(f"\nQuestion : {query}")
+        print(f"\nSource used : {response["source_used"]}")
+        print(f"\nAnswer : {response["answer"]}")
 
-    
+        print("\n"+"="*100)
 
-    return response
+        return response
 
 
+username = "tester1"
+title = "LangChain?"
 
-result = ask_agent("Hi, how do I manage short term memory in LangGraph?")
+thread_id = "fbab5f83-da0b-40d5-a33c-a3cec4d5083c"
+
+config = {
+    "configurable" : {
+        "thread_id" : thread_id
+    }
+}
+
+result = ask_agent(username, "What did I ask?", config=config)

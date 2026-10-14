@@ -5,6 +5,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from agents.rag_agent import load_model
 from states.agent_state import AgentState
+from langchain.messages import AIMessage
 
 model = load_model()
 
@@ -38,5 +39,6 @@ def generate_from_kb(state : AgentState):
 
     return {
         "answer" : answer,
-        "source_used" : "private_kb"
+        "source_used" : "private_kb",
+        "messages" : [AIMessage(answer)]
     }

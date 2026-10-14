@@ -1,12 +1,11 @@
-from sympy.combinatorics.permutations import Perm
-from langgraph.channels.base import Value
-from numpy.f2py.auxfuncs import throw_error
+from rag_project import thread_id
 import os
 from dotenv import load_dotenv
 from uuid import uuid4
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, delete
 from sqlalchemy.orm import sessionmaker
-from init_database import Chat
+from memory.init_database import Chat
+from langgraph.checkpoint.postgres import PostgresSaver
 
 load_dotenv()
 
@@ -15,7 +14,7 @@ DB_URL = os.getenv("DB_URL")
 
 engine = create_engine(DB_URL)
 
-SessionLocal = sessionmaker(bind=engine)
+SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 def create_chat(username : str, title : str):
 
@@ -27,10 +26,12 @@ def create_chat(username : str, title : str):
             thread_id=thread_id,
             title=title
         )
-
-        session.add(chat)
-        session.commit()
-        session.refresh(chat)
+        try:
+            session.add(chat)
+            session.commit()
+            session.refresh(chat)
+        except Exception as e:
+            raise ValueError(f"Unable to CREATE a new chat for User : {username} with title : {title}")
 
         print(f"User : {username} created a new chat with id : {thread_id}\n\n")
 
@@ -64,9 +65,11 @@ def update_chat(username : str, thread_id : str, title : str):
         
         old_title = chat.title
         chat.title = title
-
-        session.commit()
-        session.refresh(chat)
+        try:
+            session.commit()
+            session.refresh(chat)
+        except Exception as e:
+            raise ValueError(f"Unable to update the chat title with id : {thread_id} for the User : {username}")
 
         print(f"User : {username} changed the title from {old_title} to {title}\n\n")
 
@@ -83,8 +86,16 @@ def delete_chat(username : str, thread_id : str):
         if chat.username!=username:
             raise PermissionError("You don't have permission to access this chat.")
 
-        session.delete(chat)
-        session.commit()
+        try:
+            session.delete(chat)
+            session.commit()
+        except Exception as e:
+            raise ValueError(f"Unable to DELETE chat with id : {thread_id}")
+
+        with PostgresSaver.from_conn_string(DB_URL) as checkpoint:
+            checkpoint.setup()
+
+            checkpoint.delete_thread(thread_id)
 
         print(f"User : {username} deleted the chat with id : {thread_id}\n\n")
 
@@ -97,12 +108,26 @@ def get_all_chats(username : str):
         stmt = select(Chat).where(Chat.username==username)
         chats = session.scalars(stmt).all()
 
-        print(f"User : {username} retrived total {len(chats)} chats.")
+        print(f"User : {username} retrived total {len(chats)} chats.\n\n")
 
         return chats
 
+def delete_all_chats(username : str):
 
-username = "tester1"
-title = "Updated RAG Systems"
-
-get_all_chats(username)
+    with SessionLocal() as session:
+        stmt = select(Chat).where(Chat.username==username)
+        chats = session.scalars(stmt).all()
+        stmt = delete(Chat).where(Chat.username==username)
+        try:
+            with PostgresSaver.from_conn_string(DB_URL) as checkpoint:
+                checkpoint.setup()
+                for chat in chats:
+                    thread_id = chat.thread_id
+                    try:
+                        checkpoint.delete_thread(thread_id)
+                    except Exception as e:
+                        raise ValueError(f"Unable to delete the chat with id : {thread_id} for the User : {username}")
+            session.execute(stmt)
+            session.commit()
+        except Exception as e:
+            raise ValueError(f"Unable to DELETE all chat for the User : {username}")
