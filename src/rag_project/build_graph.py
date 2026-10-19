@@ -43,7 +43,8 @@ def build_graph(checkpointer=None):
     
     workflow.add_conditional_edges("route_question", route_after_decision,{
         "retrieve_kb" : "retrieve_kb",
-        "direct_answer" : "direct_answer"
+        "direct_answer" : "direct_answer",
+        "search_web" : "search_web"
     })
 
     workflow.add_edge("retrieve_kb", "grade_kb_evidence")

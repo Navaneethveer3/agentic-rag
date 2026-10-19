@@ -16,17 +16,13 @@ def route_question(state : AgentState):
     question = state["question"]
 
     decision = router_model.invoke(f"""
-    you are a router for an Agentic RAG pipeline.
-
-    if the question is simple/general/regular route to "direct"
-    else route to "kb"
-
-    question : {question}
-
-    return response as valid JSON.
-    Example :
-    {{"route" : "kb"}}
-
+    You are a router for an Agentic RAG pipeline.
+    - Route to "direct" for greetings, chitchat, or simple general logic.
+    - Route to "kb" for questions about our private knowledge base, internal docs, or LangGraph/LangChain guides.
+    - Route to "web" for real-time info, current events, market statistics, startup valuation data, or general web topics.
+    Question: {question}
+    Return response as valid JSON:
+    Example: {{"route": "web"}}
     """
     )
 
@@ -42,6 +38,9 @@ def route_after_decision(state : AgentState):
     if state["source_used"]=="kb":
         print("Decision routed : KB\n\n")
         return "retrieve_kb"
+    elif state["source_used"]=="web":
+        print("Decision routed : WEB\n\n")
+        return "search_web"
     else:
         print("Decision routed : DIRECT\n\n")
         return "direct_answer"
