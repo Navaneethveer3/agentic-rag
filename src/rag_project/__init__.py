@@ -61,13 +61,23 @@ def ask_agent(username : str, query : str, config : dict):
 
         print("\n"+"="*100)
 
+        print("\n\n\n")
+
+        context = response.get("context", {})
+        running_summary = context.get("running_summary") if context else None
+
+        if running_summary:
+            print(f"Summary : {running_summary.summary}")
+        else:
+            print("Summary : not yet generated")
+
         return response
 
 
 username = "tester1"
 title = "LangChain?"
 
-thread_id = "fbab5f83-da0b-40d5-a33c-a3cec4d5083c"
+thread_id = "cb6d24f0-7abe-4709-8a3c-abe8f58e4879"
 
 config = {
     "configurable" : {
@@ -75,4 +85,4 @@ config = {
     }
 }
 
-result = ask_agent(username, "What did I ask?", config=config)
+result = ask_agent(username, "Based on my name and the specific industry I am targeting, what should our pitch deck headline be?", config=config)

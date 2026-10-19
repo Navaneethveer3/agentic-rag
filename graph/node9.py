@@ -10,11 +10,11 @@ from langchain.messages import AIMessage, SystemMessage
 model = load_model()
 
 def direct_answer(state : AgentState):
-    question = state["question"]
+    conversation = state.get("summarized_messages", state.get("messages",[]))
 
     system_prompt = SystemMessage("Response briefly and naturally\n")
 
-    full_conversation = [system_prompt] + state["messages"]
+    full_conversation = [system_prompt] + conversation
 
     answer = model.invoke(full_conversation).content
 

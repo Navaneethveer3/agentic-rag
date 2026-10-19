@@ -12,7 +12,7 @@ def rewrite_query(state : AgentState):
     question = state["question"]
     retry_count = state["retry_count"]+1
 
-    rewritten = model.invoke(f"""
+    response = model.invoke(f"""
     Rewrite the question for better retrieval and web search.
 
     Rules:
@@ -23,7 +23,14 @@ def rewrite_query(state : AgentState):
 
     Original question:
     {question}
-    """).content.strip()
+    """)
+
+    content = response.content
+
+    if isinstance(content, list):
+        rewritten = "".join(part.get("text", "") if isinstance(part, dict) else str(part) for part in content).strip()
+    else:
+        rewritten = content.strip()
 
     print("---QUERY REWRITTEN---")
 

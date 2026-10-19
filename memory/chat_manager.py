@@ -1,4 +1,3 @@
-from rag_project import thread_id
 import os
 from dotenv import load_dotenv
 from uuid import uuid4

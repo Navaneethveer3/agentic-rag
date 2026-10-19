@@ -4,6 +4,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from langgraph.graph import StateGraph, START, END
+from memory.summarizer import load_summarizer
 from states.agent_state import AgentState
 from graph.node1 import route_question, route_after_decision
 from graph.node2 import retrieve_kb
@@ -18,9 +19,13 @@ from graph.node10 import answer_insufficient
 
 
 def build_graph(checkpointer=None):
+
+    summarizer = load_summarizer()
+
     workflow = StateGraph(AgentState)
 
     # Nodes
+    workflow.add_node("summarizer", summarizer)
     workflow.add_node("route_question", route_question)
     workflow.add_node("retrieve_kb", retrieve_kb)
     workflow.add_node("grade_kb_evidence", grade_kb_evidence)
@@ -33,7 +38,8 @@ def build_graph(checkpointer=None):
     workflow.add_node("generate_from_web", generate_from_web)
 
     # Edges
-    workflow.add_edge(START, "route_question")
+    workflow.add_edge(START, "summarizer")
+    workflow.add_edge("summarizer", "route_question")
     
     workflow.add_conditional_edges("route_question", route_after_decision,{
         "retrieve_kb" : "retrieve_kb",

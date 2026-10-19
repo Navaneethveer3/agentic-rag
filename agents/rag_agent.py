@@ -16,7 +16,7 @@ load_dotenv()
 os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
 model = ChatGoogleGenerativeAI(
-    model="gemini-3-flash-preview",
+    model="gemini-3.6-flash",
     thinking_level="low"
 )
 
