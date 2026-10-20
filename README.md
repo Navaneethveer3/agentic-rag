@@ -15,6 +15,9 @@
 - **Automatic Retry Mechanism:** Retries information retrieval up to two times when the retrieved information is insufficient to answer the user's query.
 - **Context-Aware Responses:** Generates relevant answers using retrieved information and available conversation context.
 - **Unified Information Retrieval:** Access information from documents, web search results, and specific URLs through a single interface.
+- **Message Summarization:** Older messages are summarized into a concise representation that preserves important context, key information, and relevant conversation details.
+- **Context Management:** The conversation state is updated with the summary and the necessary recent messages, reducing the amount of history passed to the language model.
+- **Conversation Continuity:** The model uses the summary and recent conversation messages to maintain continuity across longer interactions.
 
 ## Tech Stack
 - **Frontend:** React
@@ -23,3 +26,7 @@
 - **Vector DB:** Pinecone
 - **AI/ML:** LangChain, LangGraph
 - **LLM Models used:** Gemini-3.6-flash(major model), all-MiniLM-L6-v2(chunking)
+
+## Architecture/Workflow :
+<img width="1691" height="2056" alt="agentic_rag_architecture" src="https://github.com/user-attachments/assets/d92eef10-58e0-4262-953c-ab61a7471b90" />
+
