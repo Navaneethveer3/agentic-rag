@@ -75,9 +75,9 @@ def ask_agent(username : str, query : str, config : dict):
 
 
 username = "tester1"
-title = "LangChain?"
+title = "Peronal idea imporvements"
 
-thread_id = "cb6d24f0-7abe-4709-8a3c-abe8f58e4879"
+thread_id = "67c1d7fa-3857-480b-ae14-6611ed3fee8d"
 
 config = {
     "configurable" : {
@@ -85,4 +85,6 @@ config = {
     }
 }
 
-result = ask_agent(username, "Based on my name and the specific industry I am targeting, what should our pitch deck headline be?", config=config)
+query = "greet me"
+
+result = ask_agent(username, query, config=config)
