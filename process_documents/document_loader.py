@@ -1,13 +1,13 @@
-from pandas.core.reshape import encoding
 from pathlib import Path
 from langchain_core.documents import Document
-from langchain_core.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader
-from typing import Any
-from typing import List
+from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader, TextLoader
+from typing import Any, List
+from process_documents.embed_documents import embed_documents
 import asyncio
 
-async def load_documents(docs : List[Any]) -> List[Document]:
-    all_documents = List[Document] = []
+
+async def load_documents(username : str, docs : List[Any]) -> List[Document]:
+    all_documents : List[Document] = []
 
     async def load_single_document(doc : Any) -> List[Document]:
         file_path = Path(doc)
@@ -31,4 +31,8 @@ async def load_documents(docs : List[Any]) -> List[Document]:
     for documents in results:
         all_documents.extend(documents)
     
+    embed_documents(username, all_documents)
+
+    print("Documents loaded successfully\n\n")
+
     return all_documents

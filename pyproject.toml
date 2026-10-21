@@ -8,10 +8,12 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "docx2txt>=0.9",
     "google-genai>=2.29.0",
     "langchain>=1.4.3",
     "langchain-community>=0.4.2",
     "langchain-google-genai>=4.4.0",
+    "langchain-huggingface>=1.2.3",
     "langchain-mcp-adapters>=0.3.2",
     "langchain-pinecone>=0.2.13",
     "langchain-tavily>=0.2.18",
