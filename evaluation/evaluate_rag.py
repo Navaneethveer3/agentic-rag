@@ -1,3 +1,4 @@
+import time
 import sys
 from pathlib import Path
 
@@ -10,13 +11,21 @@ from build_graph import build_graph
 from langsmith.evaluation import evaluate
 from langchain.messages import HumanMessage
 from agents.rag_agent import load_model
+from openevals.llm import create_llm_as_judge
+from openevals.prompts import CORRECTNESS_PROMPT
 
 
 load_dotenv()
 
 eval_llm = load_model()
 
-graph = build_graph()
+graph = build_graph(include_summarizer=False)
+
+correctness_judge = create_llm_as_judge(
+    prompt=CORRECTNESS_PROMPT,
+    model="google_genai:gemini-3.1-flash-lite",
+    feedback_key="answer_correctness",
+)
 
 
 def clean_text(content) -> str:
@@ -50,40 +59,26 @@ def target(inputs : dict)->dict:
         "retry_count": 0,
     })
 
-    answer = result.get("answer","")
+    time.sleep(2)
+
+    answer = clean_text(result.get("answer",""))
 
     return {
         "answer" : answer
     }
 
 
-def qa_correctness_evaluator(run, example) -> dict:
+def qa_correctness_evaluator(inputs : dict, outputs : dict, reference_outputs : dict) -> dict:
     """
     LLM-as-a-judge: Evaluates if the predicted answer is factually
     consistent and conveys the key points of the reference answer.
     """
-    question = example.inputs.get("question", "")
-    expected = example.outputs.get("answer", "")
-    predicted = run.outputs.get("answer", "")
-    prompt = f"""You are an expert evaluator assessing a RAG system's response.
-    Question: {question}
-    Expected Reference Answer: {expected}
-    Agent Predicted Answer: {predicted}
-    Does the Agent Predicted Answer accurately cover the factual points from the Expected Answer?
-    Answer with ONLY:
-    SCORE: 1 (if correct and factually accurate)
-    or
-    SCORE: 0 (if incorrect, incomplete, or contradicts reference)
-    REASON: <1 sentence rationale>
-    """
-    response = eval_llm.invoke(prompt).content
-    response_text = clean_text(response)
-    score = 1 if "SCORE: 1" in response_text else 0
-    return {
-        "key": "correctness",
-        "score": score,
-        "comment": response_text
-    }
+    return correctness_judge(
+        inputs=inputs,
+        outputs=outputs,
+        reference_outputs=reference_outputs,
+    )
+
 
 
 
@@ -92,13 +87,13 @@ if __name__=="__main__":
         target,
         data="agentic-rag-system-test-v1",
         evaluators=[qa_correctness_evaluator],
-        experiment_prefix="agentic-rag-system-baseline",
+        experiment_prefix="agentic-rag-system-baseline-v1",
         description=(
-            "Baseline evaluation of my Gemini-powered "
-            "LangGraph Agentic RAG."
+            "Baseline evaluation of my Gemini-powered LLM-as-a-Judge "
+            "Semantic correctness"
         ),
         max_concurrency=1,
     )
 
-    print("Experiment done.")
+    print("Evaluation done.")
     print(results)

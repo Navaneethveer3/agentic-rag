@@ -18,7 +18,7 @@ from graph.node9 import direct_answer
 from graph.node10 import answer_insufficient
 
 
-def build_graph(checkpointer=None):
+def build_graph(checkpointer=None, include_summarizer : bool = True):
 
     summarizer = load_summarizer()
 
@@ -38,9 +38,11 @@ def build_graph(checkpointer=None):
     workflow.add_node("generate_from_web", generate_from_web)
 
     # Edges
-    workflow.add_edge(START, "summarizer")
-    workflow.add_edge("summarizer", "route_question")
-    
+    if include_summarizer:
+        workflow.add_edge(START, "summarizer")
+        workflow.add_edge("summarizer", "route_question")
+    else:
+        workflow.add_edge(START, "route_question")
     workflow.add_conditional_edges("route_question", route_after_decision,{
         "retrieve_kb" : "retrieve_kb",
         "direct_answer" : "direct_answer",

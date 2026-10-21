@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 from agents.rag_agent import load_agent
 from states.agent_state import AgentState
 from langchain.messages import SystemMessage, HumanMessage, ToolMessage
-from build_graph import build_graph
+from rag_project.build_graph import build_graph
 from memory.chat_manager import *
 from langgraph.checkpoint.postgres import PostgresSaver
 from contextlib import contextmanager
