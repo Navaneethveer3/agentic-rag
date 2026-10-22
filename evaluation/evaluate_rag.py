@@ -17,14 +17,46 @@ from openevals.prompts import CORRECTNESS_PROMPT
 
 load_dotenv()
 
-eval_llm = load_model()
+eval_llm = "google_genai:gemini-3.1-flash-lite"
 
 graph = build_graph(include_summarizer=False)
 
+FAITHFULNESS_PROMPT = """
+You are evaluating the faithfulness of an answer produced by a
+Retrieval-Augmented Generation (RAG) system.
+
+You will receive:
+- The user's question
+- The generated answer
+- The actual retrieved context used by the application
+
+Determine whether the factual claims in the answer are supported
+by the retrieved context.
+
+Scoring rules:
+- Pass if all material factual claims are supported by the context.
+- Fail if any material factual claim contradicts the context or
+  introduces unsupported factual information.
+- If the context is empty or insufficient to support the answer,
+  do not assume that the answer is grounded.
+- Judge the evidence in the context, not whether the answer
+  sounds plausible from general knowledge.
+
+Question and answer data:
+{inputs}
+{outputs}
+"""
+
 correctness_judge = create_llm_as_judge(
     prompt=CORRECTNESS_PROMPT,
-    model="google_genai:gemini-3.1-flash-lite",
+    model=eval_llm,
     feedback_key="answer_correctness",
+)
+
+faithfulness_judge = create_llm_as_judge(
+    prompt=FAITHFULNESS_PROMPT,
+    model=eval_llm,
+    feedback_key="faithfulness",
 )
 
 
@@ -59,16 +91,24 @@ def target(inputs : dict)->dict:
         "retry_count": 0,
     })
 
-    time.sleep(2)
+    time.sleep(100)
 
     answer = clean_text(result.get("answer",""))
+    docs = result.get("kb_docs",[])
+
+    context = [
+        doc.page_content if hasattr(doc, "page_content")
+        else str(doc)
+        for doc in docs
+    ]
 
     return {
-        "answer" : answer
+        "answer" : answer,
+        "context" : context,
     }
 
 
-def qa_correctness_evaluator(inputs : dict, outputs : dict, reference_outputs : dict) -> dict:
+def correctness_evaluator(inputs : dict, outputs : dict, reference_outputs : dict) -> dict:
     """
     LLM-as-a-judge: Evaluates if the predicted answer is factually
     consistent and conveys the key points of the reference answer.
@@ -80,17 +120,22 @@ def qa_correctness_evaluator(inputs : dict, outputs : dict, reference_outputs : 
     )
 
 
+def faithfulness_evaluator(inputs : dict, outputs : dict) -> dict:
+    return faithfulness_judge(
+        inputs=inputs,
+        outputs=outputs,
+    )
 
 
 if __name__=="__main__":
     results = evaluate(
         target,
         data="agentic-rag-system-test-v1",
-        evaluators=[qa_correctness_evaluator],
-        experiment_prefix="agentic-rag-system-baseline-v1",
+        evaluators=[correctness_evaluator, faithfulness_evaluator],
+        experiment_prefix="agentic-rag-system-faithfulness",
         description=(
-            "Baseline evaluation of my Gemini-powered LLM-as-a-Judge "
-            "Semantic correctness"
+            "Evaluate answer matching, semantic correctness, "
+            "and faithfulness to retrieved context."
         ),
         max_concurrency=1,
     )
