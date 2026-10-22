@@ -1,3 +1,4 @@
+from langchain_core.prompts import prompt
 import time
 import sys
 from pathlib import Path
@@ -47,6 +48,31 @@ Question and answer data:
 {outputs}
 """
 
+CONTEXT_RELEVANCE_PROMPT = """
+You are evaluating the relevance of documents retrieved by a
+Retrieval-Augmented Generation system.
+
+You will receive a user question and retrieved context.
+
+Determine whether the retrieved context contains information
+that is meaningfully relevant to answering the question.
+
+Pass if the context contains useful evidence or information
+that helps answer the question.
+
+Fail if the context is empty, entirely irrelevant, or unrelated
+to the question.
+
+Do not judge the generated answer.
+Do not use outside knowledge to assume that retrieval succeeded.
+
+Question:
+{question}
+
+Retrieved context:
+{context}
+"""
+
 correctness_judge = create_llm_as_judge(
     prompt=CORRECTNESS_PROMPT,
     model=eval_llm,
@@ -57,6 +83,12 @@ faithfulness_judge = create_llm_as_judge(
     prompt=FAITHFULNESS_PROMPT,
     model=eval_llm,
     feedback_key="faithfulness",
+)
+
+context_relevance_judge = create_llm_as_judge(
+    prompt=CONTEXT_RELEVANCE_PROMPT,
+    model=eval_llm,
+    feedback_key="context_relevance",
 )
 
 
@@ -127,15 +159,21 @@ def faithfulness_evaluator(inputs : dict, outputs : dict) -> dict:
     )
 
 
+def context_relevance_evaluator(inputs : dict, outputs : dict) -> dict:
+    return context_relevance_judge(
+        question = inputs.get("question",""),
+        context = "\n\n".join(outputs.get("context",[])) or "No context retrieved.",
+    )
+
+
 if __name__=="__main__":
     results = evaluate(
         target,
         data="agentic-rag-system-test-v1",
-        evaluators=[correctness_evaluator, faithfulness_evaluator],
-        experiment_prefix="agentic-rag-system-faithfulness",
+        evaluators=[context_relevance_evaluator],
+        experiment_prefix="agentic-rag-system-context-relevance",
         description=(
-            "Evaluate answer matching, semantic correctness, "
-            "and faithfulness to retrieved context."
+            "Measure retrieval relevance"
         ),
         max_concurrency=1,
     )
