@@ -5,9 +5,9 @@ load_dotenv()
 
 client = Client()
 
-DATASET_NAME = "agentic-rag-system-test-v1"
+DATASET_NAME = "agentic-rag-system-test-trajectory-v3"
 
-examples = [
+rag_dataset = [
     {
         "inputs" : {
             "question" : (
@@ -69,6 +69,42 @@ examples = [
     }
 ]
 
+
+trajectory_dataset = [
+    {
+        "inputs" : {
+            "question" : (
+                "How does LangGraph implement short-term memory across multiple interactions, "
+                "and what role do a checkpointer "
+                "and thread_id play in preserving conversation state?"
+            )
+        },
+        "outputs" :{
+            "route" : "private_kb"
+        }
+    },
+    {
+        "inputs" : {
+            "question" : (
+                "what are the types of architectures in multi-agents?"
+            )
+        },
+        "outputs" : {
+            "route" : "web_search"
+        }
+    },
+    {
+        "inputs" : {
+            "question" : (
+                "Hi, my name is shiva."
+            )
+        },
+        "outputs" : {
+            "route" : "direct"
+        }
+    }
+]
+
 existing = list(
     client.list_datasets(dataset_name=DATASET_NAME)
 )
@@ -88,7 +124,7 @@ else:
 
     client.create_examples(
         dataset_id=dataset.id,
-        examples=examples,
+        examples=trajectory_dataset,
     )
 
     print(f"Created dataset : {dataset.name}")

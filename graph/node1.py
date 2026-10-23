@@ -18,7 +18,7 @@ def route_question(state : AgentState):
     decision = router_model.invoke(f"""
     You are a router for an Agentic RAG pipeline.
     - Route to "direct" for greetings, chitchat, or simple general logic.
-    - Route to "kb" for questions about our private knowledge base, internal docs, or LangGraph/LangChain guides.
+    - Route to "kb" for questions about our private knowledge base, internal docs, or any document kind of information.
     - Route to "web" for real-time info, current events, market statistics, startup valuation data, or general web topics.
     Question: {question}
     Return response as valid JSON:

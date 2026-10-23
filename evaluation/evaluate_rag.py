@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 from build_graph import build_graph
 from langsmith.evaluation import evaluate
 from langchain.messages import HumanMessage, SystemMessage
-from agents.rag_agent import load_model
 from openevals.llm import create_llm_as_judge
 from openevals.prompts import CORRECTNESS_PROMPT
 
