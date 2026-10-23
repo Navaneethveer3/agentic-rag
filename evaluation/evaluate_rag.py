@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent / "src" / "rag_projec
 from dotenv import load_dotenv
 from build_graph import build_graph
 from langsmith.evaluation import evaluate
-from langchain.messages import HumanMessage
+from langchain.messages import HumanMessage, SystemMessage
 from agents.rag_agent import load_model
 from openevals.llm import create_llm_as_judge
 from openevals.prompts import CORRECTNESS_PROMPT
@@ -73,6 +73,15 @@ Retrieved context:
 {context}
 """
 
+IMPROVED_PROMPT = """
+Answer the question using the retrieved context.
+
+- Use evidence from the context.
+- Do not invent unsupported facts.
+- If the context is insufficient, say so clearly.
+- Answer the question directly.
+"""
+
 correctness_judge = create_llm_as_judge(
     prompt=CORRECTNESS_PROMPT,
     model=eval_llm,
@@ -113,7 +122,8 @@ def target(inputs : dict)->dict:
         "question": question,
         "current_query": question,
         "username": "tester1",
-        "messages": [HumanMessage(content=question)],
+        "messages": [SystemMessage(IMPROVED_PROMPT),
+        HumanMessage(content=question)],
         "kb_docs": [],
         "web_results": "",
         "kb_grade": "",
@@ -170,8 +180,8 @@ if __name__=="__main__":
     results = evaluate(
         target,
         data="agentic-rag-system-test-v1",
-        evaluators=[context_relevance_evaluator],
-        experiment_prefix="agentic-rag-system-context-relevance",
+        evaluators=[correctness_evaluator, faithfulness_evaluator, context_relevance_evaluator],
+        experiment_prefix="agentic-rag-system-all-metrics",
         description=(
             "Measure retrieval relevance"
         ),
