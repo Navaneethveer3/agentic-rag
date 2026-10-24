@@ -14,7 +14,7 @@ import asyncio
 
 load_dotenv()
 
-# @tool
+@tool
 def search_web_url(url : list[str]):
     """Web url search to retrieve data.
        This tool retrieves the information from the web and stores it in database.
@@ -44,4 +44,4 @@ def search_web_url(url : list[str]):
 urls = ["https://www.un.org/en/global-issues/climate-change?utm_source=chatgpt.com"]
 
 
-search_web_url(urls)
+# search_web_url(urls)

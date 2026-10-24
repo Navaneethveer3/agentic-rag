@@ -9,6 +9,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent / "src" / "rag_projec
 
 from dotenv import load_dotenv
 from build_graph import build_graph
+from graph.rag_test_graph import build_rag_graph
 from langsmith.evaluation import evaluate
 from langchain.messages import HumanMessage, SystemMessage
 from openevals.llm import create_llm_as_judge
@@ -19,7 +20,7 @@ load_dotenv()
 
 eval_llm = "google_genai:gemini-3.1-flash-lite"
 
-graph = build_graph(include_summarizer=False)
+graph = build_rag_graph()
 
 FAITHFULNESS_PROMPT = """
 You are evaluating the faithfulness of an answer produced by a
@@ -121,18 +122,17 @@ def target(inputs : dict)->dict:
         "question": question,
         "current_query": question,
         "username": "tester1",
-        "messages": [SystemMessage(IMPROVED_PROMPT),
-        HumanMessage(content=question)],
-        "kb_docs": [],
-        "web_results": "",
-        "kb_grade": "",
-        "web_grade": "",
+        # "messages": [SystemMessage(IMPROVED_PROMPT),
+        # HumanMessage(content=question)],
+        # "kb_docs": [],
+        # "web_results": "",
+        # "kb_grade": "",
+        # "web_grade": "",
         "answer": "",
-        "source_used": "",
-        "retry_count": 0,
+        # "source_used": "",
+        # "retry_count": 0,
     })
 
-    time.sleep(100)
 
     answer = clean_text(result.get("answer",""))
     docs = result.get("kb_docs",[])
@@ -218,12 +218,11 @@ def retrieval_metrics_evaluator(outputs : dict, reference_outputs : dict) -> dic
 if __name__=="__main__":
     results = evaluate(
         target,
-        data="agentic-rag-system-test-retrieval-metrics-v1",
-        evaluators=[retrieval_metrics_evaluator],
-        experiment_prefix="agentic-rag-system-retrieval-metrics",
+        data="agentic-rag-system-test-v2",
+        evaluators=[context_relevance_evaluator],
+        experiment_prefix="agentic-rag-system-context-relevance-v2",
         description=(
-            "Measure retrieval metrics like "
-            "precision, recall, and f1-score"
+            "Testing the context relevance of the dataset-v2"
         ),
         max_concurrency=1,
     )

@@ -1,3 +1,4 @@
+from states.rag_state import RagState
 import sys
 from pathlib import Path
 
@@ -16,7 +17,7 @@ reranker = PineconeRerank(
         top_n=3,
     )
 
-def retrieve_kb(state : AgentState):
+def retrieve_kb(state : AgentState | RagState):
 
     retriever = load_vector_store(state["username"])[1]
     query = state["current_query"]
