@@ -143,9 +143,14 @@ def target(inputs : dict)->dict:
         for doc in docs
     ]
 
+    retrieved_doc_ids = [
+        doc.id for doc in docs if hasattr(doc, "id") and doc.id is not None
+    ]
+
     return {
         "answer" : answer,
         "context" : context,
+        "retrieved_doc_ids" : retrieved_doc_ids,
     }
 
 
@@ -174,15 +179,51 @@ def context_relevance_evaluator(inputs : dict, outputs : dict) -> dict:
         context = "\n\n".join(outputs.get("context",[])) or "No context retrieved.",
     )
 
+def retrieval_metrics_evaluator(outputs : dict, reference_outputs : dict) -> dict:
+    retrieved = set(outputs.get("retrieved_doc_ids", []))
+    expected = set(reference_outputs.get("retrieved_doc_ids", []))
+
+    if not expected:
+        return [
+            {
+                "key" : "precision", "score" : 1.0 if not retrieved else 0.0
+            },
+            {
+                "key" : "recall", "score" : 1.0 if not retrieved else 0.0
+            },
+            {
+                "key" : "f1-score", "score" : 1.0 if not expected else 0.0
+            }
+        ]
+    
+    true_positives = len(retrieved & expected)
+
+    precision = true_positives/len(retrieved) if retrieved else 0.0
+    recall = true_positives/len(expected) if expected else 0.0
+    f1_score = (2*precision*recall/(precision+recall)) if (precision+recall)>0 else 0.0
+
+    return [
+        {
+            "key" : "precision", "score" : round(precision,4)
+        },
+        {
+            "key" : "recall", "score" : round(recall, 4)
+        },
+        {
+            "key" : "f1-score", "score" : round(f1_score, 4)
+        },
+    ]
+
 
 if __name__=="__main__":
     results = evaluate(
         target,
-        data="agentic-rag-system-test-v1",
-        evaluators=[correctness_evaluator, faithfulness_evaluator, context_relevance_evaluator],
-        experiment_prefix="agentic-rag-system-all-metrics",
+        data="agentic-rag-system-test-retrieval-metrics-v1",
+        evaluators=[retrieval_metrics_evaluator],
+        experiment_prefix="agentic-rag-system-retrieval-metrics",
         description=(
-            "Measure retrieval relevance"
+            "Measure retrieval metrics like "
+            "precision, recall, and f1-score"
         ),
         max_concurrency=1,
     )

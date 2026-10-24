@@ -5,7 +5,7 @@ load_dotenv()
 
 client = Client()
 
-DATASET_NAME = "agentic-rag-system-test-trajectory-v3"
+DATASET_NAME = "agentic-rag-system-test-retrieval-metrics-v1"
 
 rag_dataset = [
     {
@@ -105,6 +105,43 @@ trajectory_dataset = [
     }
 ]
 
+retrieval_metrics_dataset = [
+    {
+        "inputs" : {
+            "question" : (
+                "How does LangGraph manage short-term memory across multiple interactions in a conversation, "
+                "and what role do checkpoints and threads play in preserving conversation state?"
+            )
+        },
+        "outputs" : {
+            "retrieved_doc_ids" : ["5e7db127-01cd-42c4-85a5-ce039c507d82", "6d3c97bb-1fa6-4af9-9348-080cf24586a2", "604f209c-f4b5-4ed0-91e8-6ad4c9011a7d"]
+        }
+    },
+    {
+        "inputs" : {
+            "question" : (
+                "How does LangGraph store and retrieve long-term memories across different conversations, "
+                "and how are namespaces and keys used to organize memories in a store?"
+            )
+        },
+        "outputs" : {
+            "retrieved_doc_ids" : ["c07a654c-234c-4bad-b775-08ea5e05a788", "cea822be-12aa-4d25-9418-94d1c4d17d0f", "5e7db127-01cd-42c4-85a5-ce039c507d82"]
+        }
+    },
+    {
+        "inputs" : {
+            "question" : (
+                "How can semantic search be used to retrieve relevant memories from a LangGraph store, "
+                "and what role do embeddings and similarity search play in finding those memories?"
+            )
+        },
+        "outputs" : {
+            "retrieved_doc_ids" : ["cea822be-12aa-4d25-9418-94d1c4d17d0f", "c07a654c-234c-4bad-b775-08ea5e05a788", "edfbb932-352c-470f-9b29-e401075e860f"]
+        }
+    }
+]
+
+
 existing = list(
     client.list_datasets(dataset_name=DATASET_NAME)
 )
@@ -124,7 +161,7 @@ else:
 
     client.create_examples(
         dataset_id=dataset.id,
-        examples=trajectory_dataset,
+        examples=retrieval_metrics_dataset,
     )
 
     print(f"Created dataset : {dataset.name}")
