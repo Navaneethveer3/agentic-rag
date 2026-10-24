@@ -5,7 +5,7 @@ load_dotenv()
 
 client = Client()
 
-DATASET_NAME = "agentic-rag-system-test-v2"
+DATASET_NAME = "agentic-rag-system-test-retrieval-metrics-v2"
 
 rag_dataset = [
     {
@@ -98,6 +98,65 @@ rag_dataset = [
     }
 ]
 
+retrieval_metrics_dataset = [
+    {
+        "inputs": {
+            "question": (
+                "How do human activities contribute to climate change, "
+                "and what role do greenhouse gases play in this process?"
+            )
+        },
+        "outputs": {
+            "retrieved_doc_ids" : ["f45c7437-0da3-4cbb-a203-60537a5c9f70", "8c7674d3-d1d3-4ec2-9747-58ef3d2b5e88", "1d589a9f-104b-4a34-9e7f-6dc71cb4af0a"]
+        }
+    },
+    {
+        "inputs": {
+            "question": (
+                "How can climate change affect both natural ecosystems "
+                "and human communities?"
+            )
+        },
+        "outputs": {
+            "retrieved_doc_ids" : ["8c7674d3-d1d3-4ec2-9747-58ef3d2b5e88", "479c084e-0bac-436e-b595-b8620addf87a", "f45c7437-0da3-4cbb-a203-60537a5c9f70"]
+        }
+    },
+    {
+        "inputs": {
+            "question": (
+                "Why are developing countries and vulnerable communities "
+                "often disproportionately affected by climate change?"
+            )
+        },
+        "outputs": {
+            "retrieved_doc_ids" : ["479c084e-0bac-436e-b595-b8620addf87a", "2922027d-d17f-47c1-aa46-beb9f79616a9", "8c7674d3-d1d3-4ec2-9747-58ef3d2b5e88"]
+        }
+    },
+    {
+        "inputs": {
+            "question": (
+                "What is the difference between climate change mitigation "
+                "and adaptation, and why are both necessary?"
+            )
+        },
+        "outputs": {
+            "retrieved_doc_ids" : ["8c7674d3-d1d3-4ec2-9747-58ef3d2b5e88", "479c084e-0bac-436e-b595-b8620addf87a", "f45c7437-0da3-4cbb-a203-60537a5c9f70"]
+        }
+    },
+    {
+        "inputs": {
+            "question": (
+                "How does international cooperation help address climate "
+                "change, and how does the Paris Agreement contribute "
+                "to this effort?"
+            )
+        },
+        "outputs": {
+            "retrieved_doc_ids" : ["d8219c24-b45b-43ea-ac52-a7745b96b43d", "0b914df1-5587-449c-b7b2-023b92df67c8", "3f724b48-c55a-4e18-8406-5d3dcfc8c501"]
+        }
+    }
+]
+
 existing = list(
     client.list_datasets(dataset_name=DATASET_NAME)
 )
@@ -116,7 +175,7 @@ else:
 
     client.create_examples(
         dataset_id=dataset.id,
-        examples=rag_dataset,
+        examples=retrieval_metrics_dataset,
     )
 
     print(f"Created dataset : {dataset.name}\n\n")
