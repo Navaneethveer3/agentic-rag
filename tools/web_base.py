@@ -14,7 +14,7 @@ import asyncio
 
 load_dotenv()
 
-# @tool
+@tool
 def search_web_url(url : list[str]):
     """Web url search to retrieve data.
        This tool retrieves the information from the web and stores it in database.
@@ -41,7 +41,7 @@ def search_web_url(url : list[str]):
 
     print("chunks loaded successfully")
 
-urls = ["https://science.howstuffworks.com/environmental/earth/oceanography/deep-ocean-exploration.htm"]
+urls = ["https://science.howstuffworks.com/environmental/earth/arctic-ocean.htm"]
 
 
 # search_web_url(urls)
