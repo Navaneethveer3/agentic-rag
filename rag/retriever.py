@@ -8,9 +8,10 @@ from rag.vector_db import load_vector_store
 retriever = load_vector_store("tester1")[1]
 
 question = (
-                "How does international cooperation help address climate "
-                "change, and how does the Paris Agreement contribute "
-                "to this effort?"
+                "Rhodium prices are influenced by its limited supply, "
+                "automotive industry demand, mining production, recycling, "
+                "and emissions regulations. These factors can cause "
+                "significant price fluctuations."
             )
 
 docs = retriever.invoke(question)
