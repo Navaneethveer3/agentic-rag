@@ -8,10 +8,10 @@ from rag.vector_db import load_vector_store
 retriever = load_vector_store("tester1")[1]
 
 question = (
-                "Rhodium prices are influenced by its limited supply, "
-                "automotive industry demand, mining production, recycling, "
-                "and emissions regulations. These factors can cause "
-                "significant price fluctuations."
+                "Deep-ocean exploration helps scientists discover "
+                "unknown marine species, study underwater ecosystems, "
+                "understand geological processes, and learn more "
+                "about Earth's oceans."
             )
 
 docs = retriever.invoke(question)
