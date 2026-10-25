@@ -41,7 +41,7 @@ def search_web_url(url : list[str]):
 
     print("chunks loaded successfully")
 
-urls = ["https://science.howstuffworks.com/rhodium.htm"]
+urls = ["https://science.howstuffworks.com/environmental/earth/oceanography/deep-ocean-exploration.htm"]
 
 
 # search_web_url(urls)
