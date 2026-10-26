@@ -8,10 +8,7 @@ from rag.vector_db import load_vector_store
 retriever = load_vector_store("tester1")[1]
 
 question = (
-                "Deep-ocean exploration helps scientists discover "
-                "unknown marine species, study underwater ecosystems, "
-                "understand geological processes, and learn more "
-                "about Earth's oceans."
+                "How does climate change affect the Arctic Ocean?"
             )
 
 docs = retriever.invoke(question)
