@@ -218,12 +218,13 @@ def retrieval_metrics_evaluator(outputs : dict, reference_outputs : dict) -> dic
 if __name__=="__main__":
     results = evaluate(
         target,
-        data="agentic-rag-system-test-v5",
-        evaluators=[context_relevance_evaluator],
-        experiment_prefix="agentic-rag-system-context-relevance-v5",
+        data="agentic-rag-system-retrieval-metrics-v5",
+        evaluators=[retrieval_metrics_evaluator],
+        experiment_prefix="agentic-rag-system-retrieval-metrics-v5",
         description=(
-            "Testing the context relevance of RAG system with "
-            "the version-5 dataset."
+            "Testing the retrieval metrics of RAG system with "
+            "the version-5 dataset. Metrics include "
+            "precision, recall, and f1-score."
         ),
         max_concurrency=1,
     )
