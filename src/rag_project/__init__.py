@@ -6,8 +6,8 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from agents.rag_agent import load_agent
 from states.agent_state import AgentState
-from langchain.messages import SystemMessage, HumanMessage, ToolMessage
-from rag_project.build_graph import build_graph
+from langchain.messages import HumanMessage
+from build_graph import build_graph
 from memory.chat_manager import *
 from langgraph.checkpoint.postgres import PostgresSaver
 from contextlib import contextmanager
@@ -74,17 +74,18 @@ def ask_agent(username : str, query : str, config : dict):
         return response
 
 
-username = "tester1"
-title = "Peronal idea imporvements"
+if __name__=="__main__":
+    username = "tester1"
+    title = "Peronal idea imporvements"
 
-thread_id = create_chat(username, title).thread_id
+    thread_id = create_chat(username, title).thread_id
 
-config = {
-    "configurable" : {
-        "thread_id" : thread_id
+    config = {
+        "configurable" : {
+            "thread_id" : thread_id
+        }
     }
-}
 
-query = "Hi, my name is veer. My email address is veer123@gmail.com"
+    query = "Hi, my name is veer. My card details are 4242-4242-4242-4242"
 
-result = ask_agent(username, query, config)
+    result = ask_agent(username, query, config)
