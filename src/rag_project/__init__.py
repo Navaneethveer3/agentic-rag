@@ -55,7 +55,7 @@ def ask_agent(username : str, query : str, config : dict):
 
         print("\n"+"="*100)
 
-        print(f"\nQuestion : {query}")
+        print(f"\nQuestion : {response["question"]}")
         print(f"\nSource used : {response["source_used"]}")
         print(f"\nAnswer : {response["answer"]}")
 
@@ -77,7 +77,7 @@ def ask_agent(username : str, query : str, config : dict):
 username = "tester1"
 title = "Peronal idea imporvements"
 
-thread_id = "67c1d7fa-3857-480b-ae14-6611ed3fee8d"
+thread_id = create_chat(username, title).thread_id
 
 config = {
     "configurable" : {
@@ -85,6 +85,6 @@ config = {
     }
 }
 
-query = "greet me"
+query = "Hi, my name is veer. My email address is veer123@gmail.com"
 
-result = ask_agent(username, query, config=config)
+result = ask_agent(username, query, config)

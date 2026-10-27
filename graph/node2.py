@@ -26,18 +26,31 @@ def retrieve_kb(state : AgentState | RagState):
 
     print("---DOCUMENTS RETRIEVED---\n\n")
 
+    print("Before Ranking : \n")
+
+    for i, doc in enumerate(docs, start=1):
+        print(f"Document {i} : {doc.id}\n")
+    
+    print("\n")
+
     if not docs:
         return {"kb_docs" : []}
     
     doc_id_map = {doc.page_content : doc.id for doc in docs}
+
 
     ranked_docs = reranker.compress_documents(
         documents=docs,
         query=query,
     )
 
-    for doc in ranked_docs:
+    print("Docs after Reranking :\n")
+
+    for i, doc in enumerate(ranked_docs, start=1):
         doc.id = doc_id_map.get(doc.page_content)
+        print(f"Reranked document {i} : {doc.id}\n")
+    
+    print("\n")
 
     print("---DOCUMENTS RERANKED---\n\n")
 

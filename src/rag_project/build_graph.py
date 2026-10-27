@@ -6,6 +6,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 from langgraph.graph import StateGraph, START, END
 from memory.summarizer import load_summarizer
 from states.agent_state import AgentState
+from graph.guardrails_node import guardrail_node, check_guardrail
 from graph.node1 import route_question, route_after_decision
 from graph.node2 import retrieve_kb
 from graph.node3 import grade_kb_evidence, decide_after_kb_grade
@@ -25,6 +26,7 @@ def build_graph(checkpointer=None, include_summarizer : bool = True):
     workflow = StateGraph(AgentState)
 
     # Nodes
+    workflow.add_node("guardrail_node", guardrail_node)
     workflow.add_node("summarizer", summarizer)
     workflow.add_node("route_question", route_question)
     workflow.add_node("retrieve_kb", retrieve_kb)
@@ -38,11 +40,21 @@ def build_graph(checkpointer=None, include_summarizer : bool = True):
     workflow.add_node("generate_from_web", generate_from_web)
 
     # Edges
-    if include_summarizer:
-        workflow.add_edge(START, "summarizer")
-        workflow.add_edge("summarizer", "route_question")
-    else:
-        workflow.add_edge(START, "route_question")
+
+    workflow.add_edge(START, "guardrail_node")
+
+    next_node = "summarizer" if include_summarizer else "route_question"
+
+    workflow.add_conditional_edges("guardrail_node", check_guardrail, 
+    {
+        "blocked" : END,
+        "proceed" : next_node,
+    }
+    )
+
+
+    workflow.add_edge(next_node, "route_question")
+
     workflow.add_conditional_edges("route_question", route_after_decision,{
         "retrieve_kb" : "retrieve_kb",
         "direct_answer" : "direct_answer",

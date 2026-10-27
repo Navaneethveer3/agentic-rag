@@ -22,3 +22,16 @@ def build_rag_graph():
     graph = workflow.compile()
 
     return graph
+
+# query = "How to manage short-term memory?"
+
+# initial_state = {
+#     "question" : query,
+#     "current_query" : query,
+#     "username" : "tester1",
+#     "answer" : "",
+# }
+
+# graph = build_rag_graph()
+
+# graph.invoke(initial_state)

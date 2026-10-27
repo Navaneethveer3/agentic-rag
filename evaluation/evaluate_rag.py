@@ -124,7 +124,7 @@ def target(inputs : dict)->dict:
         "username": "tester1",
         # "messages": [SystemMessage(IMPROVED_PROMPT),
         # HumanMessage(content=question)],
-        # "kb_docs": [],
+        "kb_docs": [],
         # "web_results": "",
         # "kb_grade": "",
         # "web_grade": "",
