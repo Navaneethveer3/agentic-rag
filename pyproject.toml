@@ -27,6 +27,7 @@ dependencies = [
     "langmem>=0.0.30",
     "langsmith>=0.14.4",
     "mcp>=1.30.0",
+    "msal>=1.39.0",
     "openevals>=0.2.0",
     "pinecone>=7.3.0",
     "pymupdf>=1.28.2",
