@@ -7,9 +7,10 @@ from states.agent_state import AgentState
 from agents.rag_agent import load_model
 from langchain.messages import AIMessage, SystemMessage
 
-model = load_model()
 
 def direct_answer(state : AgentState):
+    model = load_model("gemini-3.1-flash-lite")
+
     conversation = state.get("summarized_messages", state.get("messages",[]))
 
     system_prompt = SystemMessage("Response briefly and naturally\n")

@@ -7,9 +7,10 @@ from states.agent_state import AgentState
 from agents.rag_agent import load_model
 from langchain.messages import AIMessage
 
-model = load_model()
 
 def generate_from_web(state : AgentState):
+    model = load_model(state["model_name"] if state["model_name"] is not None else None)
+
     question = state["question"]
     web_context = state["web_results"]
 

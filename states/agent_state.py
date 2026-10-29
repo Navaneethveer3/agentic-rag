@@ -5,6 +5,7 @@ from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 
 class AgentState(TypedDict):
+    model_name : str
     messages : Annotated[List[BaseMessage], add_messages]
     summarized_messages : List[BaseMessage]
     context : dict[str, Any]

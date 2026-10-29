@@ -7,11 +7,12 @@ from states.agent_state import AgentState
 from states.grade_decision import GradeEvidence
 from agents.rag_agent import load_model
 
-model = load_model()
-
-decision_llm = model.with_structured_output(GradeEvidence, method="json_mode")
 
 def grade_kb_evidence(state : AgentState):
+    model = load_model(state["model_name"] if state["model_name"]!=None else None)
+
+    decision_llm = model.with_structured_output(GradeEvidence, method="json_mode")
+
     question = state["question"]
 
     context = "\n\n".join(

@@ -7,11 +7,13 @@ from states.grade_decision import GradeEvidence
 from states.agent_state import AgentState
 from agents.rag_agent import load_model
 
-model = load_model()
 
-grader_llm = model.with_structured_output(GradeEvidence, method="json_mode")
 
 def grade_web_evidence(state : AgentState):
+    model = load_model(state["model_name"] if state["model_name"]!=None else None)
+
+    grader_llm = model.with_structured_output(GradeEvidence, method="json_mode")
+
     question = state["question"]
 
     web_results = state["web_results"]

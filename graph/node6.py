@@ -6,9 +6,9 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from states.agent_state import AgentState
 from agents.rag_agent import load_model
 
-model = load_model()
 
 def rewrite_query(state : AgentState):
+    model = load_model("gemini-3.1-flash-lite")
     question = state["question"]
     retry_count = state["retry_count"]+1
 

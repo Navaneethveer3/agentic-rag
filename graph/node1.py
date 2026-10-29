@@ -8,11 +8,12 @@ from states.agent_state import AgentState
 from agents.rag_agent import load_model
 
 
-model = load_model()
-
-router_model = model.with_structured_output(RouteDecision, method="json_mode")
 
 def route_question(state : AgentState):
+    model = load_model(state["model_name"] if state["model_name"]!=None else None)
+
+    router_model = model.with_structured_output(RouteDecision, method="json_mode")
+
     question = state["question"]
 
     decision = router_model.invoke(f"""

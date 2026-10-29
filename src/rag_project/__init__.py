@@ -11,6 +11,7 @@ from build_graph import build_graph
 from memory.chat_manager import *
 from langgraph.checkpoint.postgres import PostgresSaver
 from contextlib import contextmanager
+from auth.entra_auth import login_with_entra
 import os
 from dotenv import load_dotenv
 
@@ -33,8 +34,9 @@ def load_connection():
 
 
     
-def ask_agent(username : str, query : str, config : dict):
+def ask_agent(username : str, query : str, config : dict, model_name : str = None):
     initial_state : AgentState = {
+        "model_name" : model_name,
         "username" : username,
         "question" : query,
         "current_query" : query,
@@ -75,7 +77,10 @@ def ask_agent(username : str, query : str, config : dict):
 
 
 if __name__=="__main__":
-    username = "tester1"
+    user = login_with_entra()
+
+    username = user["username"]
+
     title = "Peronal idea imporvements"
 
     thread_id = create_chat(username, title).thread_id

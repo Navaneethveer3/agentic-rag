@@ -15,11 +15,8 @@ load_dotenv()
 
 os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 
-model = ChatGoogleGenerativeAI(
-    model="gemini-3.5-flash-lite",
-    thinking_level="low",
-    max_retries=2,
-)
+DEFAULT_MODEL_NAME = "gemini-3-flash-preview"
+
 
 tools = [
     search_web_url,
@@ -28,12 +25,17 @@ tools = [
 ]
 
 agent = create_agent(
-    model=model,
+    model="google_genai:"+DEFAULT_MODEL_NAME,
     tools=tools
 )
 
 def load_agent():
     return agent
 
-def load_model():
+def load_model(model_name : str = None):
+    model = ChatGoogleGenerativeAI(
+        model=DEFAULT_MODEL_NAME if model_name is None else model_name,
+        thinking_level="low",
+        max_retries=2,
+    )
     return model
