@@ -13,10 +13,9 @@ from tools.tavily_web_search import web_search
 
 load_dotenv()
 
-os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
+os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY", "")
 
 DEFAULT_MODEL_NAME = "gemini-3-flash-preview"
-
 
 tools = [
     search_web_url,
@@ -24,15 +23,18 @@ tools = [
     web_search
 ]
 
-agent = create_agent(
-    model="google_genai:"+DEFAULT_MODEL_NAME,
-    tools=tools
-)
+_agent = None
 
 def load_agent():
-    return agent
+    global _agent
+    if _agent is None:
+        _agent = create_agent(
+            model="google_genai:" + DEFAULT_MODEL_NAME,
+            tools=tools
+        )
+    return _agent
 
-def load_model(model_name : str = None):
+def load_model(model_name: str = None):
     model = ChatGoogleGenerativeAI(
         model=DEFAULT_MODEL_NAME if model_name is None else model_name,
         thinking_level="low",

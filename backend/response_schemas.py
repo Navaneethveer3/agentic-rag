@@ -25,3 +25,15 @@ class MessageResponse(BaseModel):
     source_used: str
     answer: str
     summary: Optional[str] = None
+
+class ParsedFileInfo(BaseModel):
+    filename: str
+    size: int
+    status: str = "indexed"
+
+class DocumentParseResponse(BaseModel):
+    status: str
+    message: str
+    files: List[ParsedFileInfo]
+    total_documents: int
+    username: str

@@ -3,7 +3,6 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
-
 from agents.rag_agent import load_agent
 from states.agent_state import AgentState
 from langchain.messages import HumanMessage
@@ -22,18 +21,21 @@ DB_URL = os.getenv("DB_URL")
 def main() -> None:
     print("Hello from rag-project!")
 
-
-agent = load_agent()
+_checkpoint_setup_done = False
 
 @contextmanager
 def load_connection():
+    global _checkpoint_setup_done
     with PostgresSaver.from_conn_string(DB_URL) as checkpoint:
-        checkpoint.setup()
+        if not _checkpoint_setup_done:
+            try:
+                checkpoint.setup()
+                _checkpoint_setup_done = True
+            except Exception as e:
+                print(f"Checkpoint setup notice: {e}")
         yield checkpoint
 
 
-
-    
 def ask_agent(username : str, query : str, config : dict, model_name : str = None):
     initial_state : AgentState = {
         "model_name" : model_name,
@@ -57,9 +59,9 @@ def ask_agent(username : str, query : str, config : dict, model_name : str = Non
 
         print("\n"+"="*100)
 
-        print(f"\nQuestion : {response["question"]}")
-        print(f"\nSource used : {response["source_used"]}")
-        print(f"\nAnswer : {response["answer"]}")
+        print(f"\nQuestion : {response['question']}")
+        print(f"\nSource used : {response['source_used']}")
+        print(f"\nAnswer : {response['answer']}")
 
         print("\n"+"="*100)
 
@@ -78,19 +80,3 @@ def ask_agent(username : str, query : str, config : dict, model_name : str = Non
 
 if __name__=="__main__":
     user = login_with_entra()
-
-    username = user["username"]
-
-    title = "Peronal idea imporvements"
-
-    thread_id = create_chat(username, title).thread_id
-
-    config = {
-        "configurable" : {
-            "thread_id" : thread_id
-        }
-    }
-
-    query = "Hi, my name is veer. My card details are 4242-4242-4242-4242"
-
-    result = ask_agent(username, query, config)

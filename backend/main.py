@@ -9,11 +9,13 @@ SRC_PATH = PROJECT_ROOT / "src" / "rag_project"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
+import tempfile
+import shutil
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from dotenv import load_dotenv
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
 from memory.chat_manager import (
@@ -23,14 +25,17 @@ from memory.chat_manager import (
     update_chat,
     delete_chat,
     delete_all_chats,
+    save_chat_message,
+    get_chat_messages,
 )
-from src.rag_project import ask_agent
 from backend.response_schemas import (
     CreateChatRequest, 
     UpdateChatRequest, 
     ChatResponse, 
     MessageRequest, 
-    MessageResponse)
+    MessageResponse,
+    ParsedFileInfo,
+    DocumentParseResponse)
 from backend.get_user import get_current_user
 
 load_dotenv()
@@ -61,6 +66,43 @@ app.add_middleware(
 def health_check():
     """Health check endpoint to verify API and DB connectivity."""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/api/auth/config", tags=["Auth"])
+def get_auth_config():
+    """Returns public Azure Entra ID SSO configuration for frontend authentication."""
+    import os
+    tenant_id = os.getenv("AZURE_TENANT_ID", "")
+    client_id = os.getenv("AZURE_CLIENT_ID", "")
+    return {
+        "tenant_id": tenant_id,
+        "client_id": client_id,
+        "authority": f"https://login.microsoftonline.com/{tenant_id}",
+    }
+
+
+@app.post("/api/auth/entra/login", tags=["Auth"])
+def api_entra_login():
+    """
+    Performs interactive Microsoft Entra ID authentication via MSAL.
+    Returns user details and access token upon successful authentication.
+    """
+    try:
+        from auth.entra_auth import login_with_entra
+        user_info = login_with_entra()
+        return {
+            "status": "success",
+            "username": user_info.get("username"),
+            "name": user_info.get("name"),
+            "oid": user_info.get("oid"),
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Microsoft Entra ID authentication failed: {str(e)}"
+        )
+
+
 
 
 @app.post("/api/chats", response_model=ChatResponse, tags=["Chats"])
@@ -157,12 +199,46 @@ def api_delete_chat(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-def api_delete_all_chats(username : str = Depends(get_current_user)):
+@app.delete("/api/chats", tags=["Chats"])
+def api_delete_all_chats(username: str = Depends(get_current_user)):
     """Delete all the chats for a user"""
     try:
         delete_all_chats(username)
+        return {"message": "All chats deleted successfully"}
     except Exception as e:
-        raise Exception(e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@app.get("/api/chats/{thread_id}/messages", tags=["Chats"])
+def api_get_chat_messages(
+    thread_id: str,
+    username: str = Depends(get_current_user),
+):
+    """
+    Retrieves full message history for a specific conversation thread.
+    Allows previous conversations in the chats to be visible when loaded.
+    """
+    try:
+        get_chat(username=username, thread_id=thread_id)
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+    messages = get_chat_messages(thread_id)
+    return [
+        {
+            "id": m.id,
+            "thread_id": m.thread_id,
+            "role": m.role,
+            "text": m.text,
+            "source": m.source,
+            "model": m.model,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        for m in messages
+    ]
+
 
 @app.post("/api/chats/{thread_id}/messages", response_model=MessageResponse, tags=["Agent"])
 def api_send_message(
@@ -172,7 +248,7 @@ def api_send_message(
 ):
     """
     Sends a question to the Agentic RAG graph within a specific conversation thread.
-    Persists history to Azure PostgreSQL checkpointer.
+    Persists history to Azure PostgreSQL database and checkpointer.
     """
     # Verify ownership of the chat
     try:
@@ -182,6 +258,9 @@ def api_send_message(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
+    # Save user message to database history
+    save_chat_message(thread_id=thread_id, role="user", text=req.query)
+
     config = {
         "configurable": {
             "thread_id": thread_id
@@ -189,6 +268,9 @@ def api_send_message(
     }
 
     try:
+        # Lazy import of ask_agent to keep startup fast
+        from src.rag_project import ask_agent
+
         response = ask_agent(
             username=username,
             query=req.query,
@@ -207,10 +289,21 @@ def api_send_message(
         else:
             answer_text = str(raw_answer)
 
+        source_used = response.get("source_used", "unknown")
+
+        # Save agent response to database history
+        save_chat_message(
+            thread_id=thread_id,
+            role="agent",
+            text=answer_text,
+            source=source_used,
+            model=req.model_name,
+        )
+
         return MessageResponse(
             thread_id=thread_id,
             question=response.get("question", req.query),
-            source_used=response.get("source_used", "unknown"),
+            source_used=source_used,
             answer=answer_text,
             summary=summary_text,
         )
@@ -218,6 +311,84 @@ def api_send_message(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Agent execution failed: {str(e)}")
 
 
+@app.post("/api/documents/parse", response_model=DocumentParseResponse, tags=["Documents"])
+async def api_parse_documents(
+    files: List[UploadFile] = File(...),
+    username: str = Depends(get_current_user),
+):
+    """
+    Parses and embeds uploaded documents (PDF, DOCX, TXT, MD) into the user's vector store knowledge base.
+    Enables users to chat directly with their documents in the chatbox.
+    """
+    if not files:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No files were provided for parsing."
+        )
+
+    allowed_extensions = {".pdf", ".docx", ".txt", ".md"}
+    temp_dir = tempfile.mkdtemp(prefix="atlas_doc_upload_")
+    saved_paths = []
+    file_info_list = []
+
+    try:
+        for file in files:
+            orig_name = Path(file.filename).name
+            ext = Path(orig_name).suffix.lower()
+
+            if ext not in allowed_extensions:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Unsupported file format '{ext}' for file '{orig_name}'. Supported formats: .pdf, .docx, .txt, .md"
+                )
+
+            dest_path = Path(temp_dir) / orig_name
+            content = await file.read()
+            with open(dest_path, "wb") as f:
+                f.write(content)
+
+            saved_paths.append(str(dest_path))
+            file_info_list.append(
+                ParsedFileInfo(
+                    filename=orig_name,
+                    size=len(content),
+                    status="indexed",
+                )
+            )
+
+        # Lazy import to ensure process_documents is loaded in execution context
+        from process_documents.document_loader import load_documents
+
+        # Parse documents and index them in user's Pinecone vector store
+        all_docs = await load_documents(username=username, docs=saved_paths)
+
+        return DocumentParseResponse(
+            status="success",
+            message=f"Successfully parsed and indexed {len(file_info_list)} document(s) for {username}.",
+            files=file_info_list,
+            total_documents=len(all_docs),
+            username=username,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Document parsing failed: {str(e)}"
+        )
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+@app.post("/api/documents/upload", response_model=DocumentParseResponse, tags=["Documents"])
+async def api_upload_documents(
+    files: List[UploadFile] = File(...),
+    username: str = Depends(get_current_user),
+):
+    """Alias endpoint for document parsing."""
+    return await api_parse_documents(files=files, username=username)
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("backend.main:app", port=8000)

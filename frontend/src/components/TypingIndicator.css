@@ -1,0 +1,29 @@
+.typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  border-bottom-left-radius: 4px;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-mid);
+  animation: dotPulse 1.2s infinite ease-in-out;
+}
+
+.typing-label {
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+  font-style: italic;
+}

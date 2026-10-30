@@ -2,8 +2,9 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 from uuid import uuid4
+from typing import Optional
 
-from sqlalchemy import create_engine, String, DateTime, Index, func
+from sqlalchemy import create_engine, String, Text, DateTime, Index, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 load_dotenv()
@@ -62,7 +63,37 @@ class Chat(Base):
         ),
     )
 
-def create_tables():
-    Base.metadata.create_all(bind=engine)
 
-create_tables()
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    thread_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)  # "user" or "agent"
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index("idx_messages_thread_created", "thread_id", created_at.asc()),
+    )
+
+
+_tables_created = False
+
+def create_tables():
+    global _tables_created
+    if not _tables_created:
+        try:
+            Base.metadata.create_all(bind=engine)
+            _tables_created = True
+        except Exception as e:
+            print(f"Warning: Failed to auto-create database tables: {e}")
+
+if __name__ == "__main__":
+    create_tables()
