@@ -7,6 +7,7 @@ const SOURCE_LABELS = {
   web: { label: "Web Search", className: "source-web" },
   direct: { label: "Direct", className: "source-direct" },
   guardrail_blocked: { label: "Blocked", className: "source-blocked" },
+  tools: { label: "Web URL", className: "source-web" },
 };
 
 const ATLAS_ICON = (

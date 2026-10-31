@@ -7,11 +7,11 @@ from rag.vector_db import load_vector_store
 from langchain.tools import tool
 
 @tool
-def search_knowledge_base(username : str, query : str):
+def search_knowledge_base(username : str, query : str, filter : dict):
     """search information from the database"""
     retriever = load_vector_store(username)[1]
 
-    docs = retriever.invoke(query)
+    docs = retriever.invoke(query, filter=filter)
     return docs
 
 

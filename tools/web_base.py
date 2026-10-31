@@ -1,47 +1,80 @@
+from states.agent_state import AgentState
 import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-import os
+import re
 from dotenv import load_dotenv
 from langchain_community.document_loaders import WebBaseLoader
-from langchain.tools import tool
 from rag.vector_db import load_vector_store
 from rag.text_splitter import text_splitter
-import asyncio
 
 
 load_dotenv()
 
-@tool
-def search_web_url(url : list[str]):
+
+def search_web_url(state : AgentState):
     """Web url search to retrieve data.
        This tool retrieves the information from the web and stores it in database.
-       After performing the tool, search the database and answer the query.
     """
+
+    question = state["question"]
+
+    url_pattern = r"https?://[^\s]+"
+    urls = re.findall(url_pattern, question)
+
+    # If no URLs detected, return gracefully
+    if not urls:
+        return {
+            "question": question,
+            "current_query": question,
+            "kb_docs": [],
+            "source_used": "tools",
+        }
+
+    # Remove the URLs from the question to get the user's actual question / intent
+    clean_question = re.sub(url_pattern, "", question).strip()
+    rewritten_question = re.sub(r"\s+", " ", clean_question).strip()
+
+    # If the user only provided a URL with no question, set intent to summarizing the webpage
+    if not rewritten_question:
+        rewritten_question = "Summarize the key information, main concepts, and takeaways from this page."
+
+    username = state["username"]
+
     loader = WebBaseLoader(
-        web_paths=tuple(url),
+        web_paths=tuple(urls),
         requests_kwargs = {
             "headers" :{
-                "User-Agent" : "Mozilla/5.0 Agentic-RAG-Industry-Demo"
+                "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Agentic-RAG-Demo"
             }
         },
     )
     raw_docs = loader.load()
-    raw_data = [doc.page_content for doc in raw_docs]
 
     splitter = text_splitter()
-
     chunks = splitter.split_documents(raw_docs)
 
-    vector_store = load_vector_store("tester1")[0]
-
+    vector_store = load_vector_store(username)[0]
     vector_store.add_documents(documents=chunks)
 
-    print("chunks loaded successfully")
+    retriever = vector_store.as_retriever(
+        search_kwargs={
+            "k" : 5,
+            "filter": {
+                "source" : {"$in": urls}
+            }
+        }
+    )
 
-urls = ["https://science.howstuffworks.com/environmental/earth/arctic-ocean.htm"]
+    docs = retriever.invoke(rewritten_question)
 
+    print("chunks loaded successfully\n\n")
 
-# search_web_url(urls)
+    return {
+        "question" : rewritten_question,
+        "current_query" : rewritten_question,
+        "kb_docs" : docs,
+        "source_used" : "tools",
+    }

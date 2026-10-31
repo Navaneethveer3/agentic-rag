@@ -16,6 +16,7 @@ class AgentState(TypedDict):
     web_results : str
     kb_grade : str
     web_grade : str
+    tool_docs : List[Document]
     answer : str
     source_used : str
     retry_count : int

@@ -29,8 +29,8 @@ def grade_kb_evidence(state : AgentState):
     context :
     {context}
 
-    is this information sufficient to answer?
-    if yes, return "good"
+    Does the context contain relevant or helpful information for answering the question? Grade as "good" if it contains relevant facts,
+    even if supplemental info could be useful.
     else, return "weak"
 
     return in the JSON format.

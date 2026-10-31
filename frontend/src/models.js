@@ -9,7 +9,7 @@ export const MODEL_GROUPS = [
     description: "Ultra-fast latency and prompt answers",
     models: [
       {
-        id: "gemini-3-preview-flash",
+        id: "gemini-3-flash-preview",
         label: "gemini 3 flash",
         tag: "Speed",
       },

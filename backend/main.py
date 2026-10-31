@@ -250,7 +250,7 @@ def api_send_message(
     Sends a question to the Agentic RAG graph within a specific conversation thread.
     Persists history to Azure PostgreSQL database and checkpointer.
     """
-    # Verify ownership of the chat
+    
     try:
         get_chat(username=username, thread_id=thread_id)
     except PermissionError as e:
@@ -258,7 +258,7 @@ def api_send_message(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-    # Save user message to database history
+    
     save_chat_message(thread_id=thread_id, role="user", text=req.query)
 
     config = {
@@ -268,7 +268,7 @@ def api_send_message(
     }
 
     try:
-        # Lazy import of ask_agent to keep startup fast
+        
         from src.rag_project import ask_agent
 
         response = ask_agent(
@@ -278,20 +278,38 @@ def api_send_message(
             model_name=req.model_name,
         )
 
+       
         context = response.get("context", {})
         running_summary = context.get("running_summary") if context else None
-        summary_text = running_summary.summary if running_summary else None
+        raw_summary = running_summary.summary if running_summary else None
 
-        # Clean answer string if it comes as a list/dict
+        summary_text = None
+        if raw_summary:
+            if isinstance(raw_summary, list):
+                summary_text = "".join(
+                    part.get("text", "") if isinstance(part, dict) else str(part)
+                    for part in raw_summary
+                ).strip()
+            elif isinstance(raw_summary, dict):
+                summary_text = raw_summary.get("text", str(raw_summary))
+            else:
+                summary_text = str(raw_summary)
+
+        
         raw_answer = response.get("answer", "")
-        if isinstance(raw_answer, list) and len(raw_answer) > 0 and isinstance(raw_answer[0], dict):
-            answer_text = raw_answer[0].get("text", str(raw_answer))
+        if isinstance(raw_answer, list):
+            answer_text = "".join(
+                part.get("text", "") if isinstance(part, dict) else str(part)
+                for part in raw_answer
+            ).strip()
+        elif isinstance(raw_answer, dict):
+            answer_text = raw_answer.get("text", str(raw_answer))
         else:
             answer_text = str(raw_answer)
 
         source_used = response.get("source_used", "unknown")
 
-        # Save agent response to database history
+        
         save_chat_message(
             thread_id=thread_id,
             role="agent",

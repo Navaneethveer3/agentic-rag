@@ -1,3 +1,4 @@
+from langgraph.prebuilt import ToolNode
 import sys
 from pathlib import Path
 
@@ -6,6 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 from langgraph.graph import StateGraph, START, END
 from memory.summarizer import load_summarizer
 from states.agent_state import AgentState
+from tools.web_base import search_web_url
 from graph.guardrails_node import guardrail_node, check_guardrail
 from graph.node1 import route_question, route_after_decision
 from graph.node2 import retrieve_kb
@@ -17,6 +19,7 @@ from graph.node7 import generate_from_kb
 from graph.node8 import generate_from_web
 from graph.node9 import direct_answer
 from graph.node10 import answer_insufficient
+from graph.node11 import generate_from_tools
 
 
 def build_graph(checkpointer=None, include_summarizer : bool = True):
@@ -38,6 +41,9 @@ def build_graph(checkpointer=None, include_summarizer : bool = True):
     workflow.add_node("answer_insufficient", answer_insufficient)
     workflow.add_node("generate_from_kb", generate_from_kb)
     workflow.add_node("generate_from_web", generate_from_web)
+    workflow.add_node("tools", search_web_url)
+    workflow.add_node("generate_from_tools", generate_from_tools)
+    
 
     # Edges
 
@@ -58,7 +64,8 @@ def build_graph(checkpointer=None, include_summarizer : bool = True):
     workflow.add_conditional_edges("route_question", route_after_decision,{
         "retrieve_kb" : "retrieve_kb",
         "direct_answer" : "direct_answer",
-        "search_web" : "search_web"
+        "search_web" : "search_web",
+        "use_tools" : "tools",
     })
 
     workflow.add_edge("retrieve_kb", "grade_kb_evidence")
@@ -77,11 +84,13 @@ def build_graph(checkpointer=None, include_summarizer : bool = True):
     })
 
     workflow.add_edge("rewrite_query", "retrieve_kb")
+    workflow.add_edge("tools", "generate_from_tools")
 
     workflow.add_edge("generate_from_kb", END)
     workflow.add_edge("generate_from_web", END)
     workflow.add_edge("direct_answer", END)
     workflow.add_edge("answer_insufficient", END)
+    workflow.add_edge("generate_from_tools", END)
 
     graph = workflow.compile(checkpointer=checkpointer)
 
