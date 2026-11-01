@@ -19,9 +19,8 @@ python-multipart
 psycopg[binary]
 sqlalchemy
 msal
-postgres
+langgraph-checkpoint-postgres
 langmem
 beautifulsoup4
 docx2txt
 tavily-python
-langgraph-checkpoint-postgres

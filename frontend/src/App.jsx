@@ -6,7 +6,6 @@ import TypingIndicator from "./components/TypingIndicator";
 import WelcomeScreen from "./components/WelcomeScreen";
 import ThemeToggle from "./components/ThemeToggle";
 import { DEFAULT_MODEL_ID } from "./models";
-import { loginWithMicrosoftSSO, handleRedirectAuth } from "./authService";
 import {
   loginWithBackend,
   getAllChats,
@@ -87,6 +86,7 @@ export default function App() {
   useEffect(() => {
     async function checkRedirectReturn() {
       try {
+        const { handleRedirectAuth } = await import("./authService");
         const res = await handleRedirectAuth();
         if (res && res.username) {
           localStorage.setItem("atlas_username", res.username);
@@ -173,27 +173,24 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  // Authenticate user via Microsoft Entra ID in-page popup
+  // Authenticate user via backend Microsoft Entra ID
   async function handleLogin(e) {
-    if (e) e.preventDefault();
-    if (authLoading) return;
+    e.preventDefault();
+    const name = loginInput.trim();
+    if (!name || authLoading) return;
 
     setAuthLoading(true);
     setAuthError("");
 
     try {
-      const result = await loginWithMicrosoftSSO(loginInput.trim());
-      if (result && result.username) {
-        localStorage.setItem("atlas_username", result.username);
-        if (result.token) {
-          localStorage.setItem("atlas_token", result.token);
-        }
-        setUsername(result.username);
-        setLoggedIn(true);
-      }
+      const result = await loginWithBackend(name);
+      const authenticatedUser = result?.username || name;
+      localStorage.setItem("atlas_username", authenticatedUser);
+      setUsername(authenticatedUser);
+      setLoggedIn(true);
     } catch (err) {
-      console.error("Microsoft Entra ID authentication error:", err);
-      setAuthError(err.message || "Microsoft Entra ID authentication failed.");
+      console.error("Backend Entra authentication error:", err);
+      setAuthError(err.message || "Microsoft Entra ID authentication failed on backend.");
     } finally {
       setAuthLoading(false);
     }
@@ -413,20 +410,14 @@ export default function App() {
             <input
               className="login-input"
               type="text"
-              placeholder="Enter your Microsoft email (optional hint)"
+              placeholder="Enter your username (e.g. tester1)"
               value={loginInput}
               onChange={(e) => setLoginInput(e.target.value)}
               disabled={authLoading}
               autoFocus
             />
-            <button className="login-btn" type="submit" disabled={authLoading}>
-              <svg width="18" height="18" viewBox="0 0 21 21" style={{ marginRight: 8, verticalAlign: "middle" }}>
-                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-              </svg>
-              {authLoading ? "Authenticating with Microsoft..." : "Sign In with Microsoft Entra ID"}
+            <button className="login-btn" type="submit" disabled={!loginInput.trim() || authLoading}>
+              {authLoading ? "Authenticating with Microsoft..." : "Sign In"}
             </button>
           </form>
 
