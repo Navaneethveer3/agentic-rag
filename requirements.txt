@@ -12,3 +12,15 @@ pymupdf
 langchain-pinecone
 pinecone
 sentence-transformers
+fastapi
+uvicorn
+pydantic
+python-multipart
+psycopg[binary]
+sqlalchemy
+msal
+postgres
+langmem
+beautifulsoup4
+docx2txt
+tavily-python

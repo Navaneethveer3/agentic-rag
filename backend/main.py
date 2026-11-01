@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 from memory.chat_manager import (
     create_chat,
@@ -40,6 +41,7 @@ from backend.get_user import get_current_user
 
 load_dotenv()
 
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
 
 app = FastAPI(
     title="Agentic RAG API",
@@ -50,7 +52,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[ALLOWED_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
