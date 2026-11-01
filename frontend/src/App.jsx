@@ -16,6 +16,11 @@ import {
   parseDocuments,
   loginWithBackend,
 } from "./api";
+import {
+  loginWithMicrosoft,
+  handleRedirectAuth,
+  logoutFromMicrosoft,
+} from "./authService";
 import "./App.css";
 
 const CHEVRON_DOWN_ICON = (
@@ -80,6 +85,27 @@ export default function App() {
     }
     window.addEventListener("storage", handleStorageEvent);
     return () => window.removeEventListener("storage", handleStorageEvent);
+  }, []);
+
+  // Check if page loaded from Microsoft Entra ID redirect
+  useEffect(() => {
+    async function checkRedirect() {
+      try {
+        const res = await handleRedirectAuth();
+        if (res && res.username) {
+          localStorage.setItem("atlas_username", res.username);
+          if (res.token) localStorage.setItem("atlas_token", res.token);
+          setUsername(res.username);
+          setLoggedIn(true);
+          if (window.location.hash) {
+            window.history.replaceState(null, "", window.location.pathname);
+          }
+        }
+      } catch (err) {
+        console.warn("Redirect check notice:", err);
+      }
+    }
+    checkRedirect();
   }, []);
 
   // Handle dynamic scrolling
@@ -151,35 +177,52 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  // Authenticate user directly via backend (single-page, zero redirects)
+  // Authenticate user via Microsoft Entra ID
   async function handleLogin(e) {
     if (e) e.preventDefault();
     if (authLoading) return;
 
-    const enteredUsername = loginInput.trim() || "User";
     setAuthLoading(true);
     setAuthError("");
 
     try {
-      const res = await loginWithBackend(enteredUsername);
-      const user = res.username || enteredUsername;
-      localStorage.setItem("atlas_username", user);
-      if (res.token) {
-        localStorage.setItem("atlas_token", res.token);
+      // 1. Interactive Microsoft Entra ID authentication (popup or redirect)
+      const authResult = await loginWithMicrosoft(loginInput.trim());
+      if (!authResult) {
+        // Redirect fallback was initiated
+        return;
       }
-      setUsername(user);
+
+      const { username: msUsername, token: msToken } = authResult;
+
+      // 2. Validate/register session with backend
+      let effectiveUsername = msUsername;
+      try {
+        const backendRes = await loginWithBackend(msUsername, msToken);
+        if (backendRes?.username) {
+          effectiveUsername = backendRes.username;
+        }
+      } catch (backendErr) {
+        console.warn("Backend session record notice:", backendErr);
+      }
+
+      // 3. Store active credentials
+      localStorage.setItem("atlas_username", effectiveUsername);
+      if (msToken) {
+        localStorage.setItem("atlas_token", msToken);
+      }
+      setUsername(effectiveUsername);
       setLoggedIn(true);
     } catch (err) {
-      console.error("Backend authentication error:", err);
-      setAuthError(err.message || "Failed to sign in. Please try again.");
+      console.error("Microsoft Entra ID authentication error:", err);
+      setAuthError(err.message || "Microsoft Entra ID authentication failed. Please try again.");
     } finally {
       setAuthLoading(false);
     }
   }
 
-  function handleLogout() {
-    localStorage.removeItem("atlas_username");
-    localStorage.removeItem("atlas_token");
+  async function handleLogout() {
+    await logoutFromMicrosoft();
     setUsername("");
     setLoggedIn(false);
     setChats([]);
@@ -386,20 +429,26 @@ export default function App() {
             </svg>
           </div>
           <h1 className="login-title">Atlas Agent</h1>
-          <p className="login-subtitle">Sign in to your conversation</p>
+          <p className="login-subtitle">Sign in with Microsoft Entra ID</p>
 
           <form className="login-manual-group" onSubmit={handleLogin}>
             <input
               className="login-input"
               type="text"
-              placeholder="Enter username or email"
+              placeholder="Microsoft email (optional hint)"
               value={loginInput}
               onChange={(e) => setLoginInput(e.target.value)}
               disabled={authLoading}
               autoFocus
             />
-            <button className="login-btn" type="submit" disabled={authLoading}>
-              {authLoading ? "Signing in..." : "Sign In"}
+            <button className="login-btn ms-sso-btn" type="submit" disabled={authLoading}>
+              <svg width="18" height="18" viewBox="0 0 21 21" style={{ marginRight: "10px", verticalAlign: "middle" }}>
+                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+              </svg>
+              {authLoading ? "Authenticating with Microsoft..." : "Sign In with Microsoft"}
             </button>
           </form>
 

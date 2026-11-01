@@ -15,14 +15,16 @@ function getHeaders(username, token = null) {
   return headers;
 }
 
-export async function loginWithBackend(username) {
+export async function loginWithBackend(username, token = null) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(username ? { "X-Username": username } : {}),
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+  };
   const res = await fetch(`${API_BASE}/api/auth/entra/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(username ? { "X-Username": username } : {}),
-    },
-    body: JSON.stringify({ username }),
+    headers,
+    body: JSON.stringify({ username, token }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
