@@ -16,7 +16,7 @@ def grade_kb_evidence(state : AgentState):
     question = state["question"]
 
     context = "\n\n".join(
-        f"Source: {doc.metadata.get("source")}\n{doc.page_content}"
+        f"Source: {doc.metadata.get('source')}\n{doc.page_content}"
         for doc in state["kb_docs"]
     )
 

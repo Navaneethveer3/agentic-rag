@@ -15,7 +15,7 @@ def generate_from_kb(state : AgentState):
     question = state["question"]
 
     context = "\n\n".join(
-        f"[KB Source : {doc.metadata.get("source")}]\n{doc.page_content}"
+        f"[KB Source : {doc.metadata.get('source')}]\n{doc.page_content}"
         for doc in state["kb_docs"]
     )
 
