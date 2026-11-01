@@ -23,17 +23,6 @@ export async function initMsal() {
     console.warn("Could not fetch remote auth config, using defaults:", err);
   }
 
-  // Clear any hung interaction state from previous sessions
-  try {
-    sessionStorage.removeItem("msal.interaction.status");
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i);
-      if (key && key.includes("interaction.status")) {
-        sessionStorage.removeItem(key);
-      }
-    }
-  } catch (_) { }
-
   const msalConfig = {
     auth: {
       clientId: clientId,
@@ -42,12 +31,12 @@ export async function initMsal() {
     },
     cache: {
       cacheLocation: "localStorage",
-      storeAuthStateInCookie: false,
+      storeAuthStateInCookie: true, // Preserves auth cookies across Microsoft cross-site redirects
     },
     system: {
-      windowHashTimeout: 9000,
-      iframeHashTimeout: 9000,
-      loadFrameTimeout: 9000,
+      windowHashTimeout: 12000,
+      iframeHashTimeout: 12000,
+      loadFrameTimeout: 12000,
     },
   };
 
@@ -96,6 +85,19 @@ export async function handleRedirectAuth() {
         username,
         displayName,
         token,
+      };
+    }
+
+    // Check if user account is already active in MSAL cache
+    const accounts = instance.getAllAccounts();
+    if (accounts && accounts.length > 0) {
+      const account = accounts[0];
+      const username = account.username || account.name || "authenticated_user";
+      const displayName = account.name || username;
+      return {
+        username,
+        displayName,
+        token: null,
       };
     }
   } catch (err) {
