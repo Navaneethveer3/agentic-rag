@@ -23,7 +23,7 @@ export async function initMsal() {
         authority: `https://login.microsoftonline.com/${TENANT_ID}`,
         redirectUri: window.location.origin,
         postLogoutRedirectUri: window.location.origin,
-        navigateToLoginRequestUrl: true,
+        navigateToLoginRequestUrl: false, // Critical for popups: prevents popup from navigating to home page
       },
       cache: {
         cacheLocation: "localStorage",
@@ -33,9 +33,6 @@ export async function initMsal() {
 
     const instance = new PublicClientApplication(config);
     await instance.initialize();
-
-    // Process any pending redirect response (in case redirect flow was used)
-    await instance.handleRedirectPromise().catch(() => {});
 
     msalInstance = instance;
     return instance;
@@ -50,47 +47,69 @@ export async function initMsal() {
  * Falls back to redirect if popups are blocked.
  */
 export async function loginWithMicrosoft(loginHint = "") {
+  try {
+    sessionStorage.removeItem("msal.interaction.status");
+    localStorage.removeItem("msal.interaction.status");
+  } catch (_) {}
+
   const instance = await initMsal();
 
-  const request = { scopes: SCOPES, prompt: "select_account" };
+  const request = {
+    scopes: SCOPES,
+    prompt: "select_account",
+    redirectUri: window.location.origin,
+  };
   if (loginHint) request.loginHint = loginHint;
 
   try {
-    // Try popup first — keeps SPA state, no page reload
     const response = await instance.loginPopup(request);
     return extractAccountInfo(response);
   } catch (err) {
-    // User explicitly cancelled → re-throw
-    if (err.errorCode === "user_cancelled") {
-      throw new Error("Sign-in was cancelled.");
+    if (
+      err.errorCode === "user_cancelled" ||
+      err.name === "BrowserAuthError" && err.message?.includes("user_cancelled")
+    ) {
+      throw new Error("Microsoft sign-in was cancelled.");
     }
-    // Popup blocked → fall back to full-page redirect
-    console.warn("Popup blocked, using redirect:", err.errorCode || err.message);
+    console.warn("Popup blocked or failed, using redirect fallback:", err.errorCode || err.message);
     await instance.loginRedirect(request);
-    return null; // page will redirect; caller should exit
+    return null; // Page will redirect
   }
 }
 
 /**
- * Check if the user is returning from a redirect login.
+ * Check if the user is returning from a redirect login or has an existing session.
  * Call once on app mount. Returns account info or null.
  */
 export async function checkExistingSession() {
   const instance = await initMsal();
 
-  // Check MSAL cache for already-signed-in accounts
+  // 1. Check if returning from a full-page redirect
+  try {
+    const redirectResponse = await instance.handleRedirectPromise();
+    if (redirectResponse && redirectResponse.account) {
+      return extractAccountInfo(redirectResponse);
+    }
+  } catch (err) {
+    console.warn("Redirect processing notice:", err);
+  }
+
+  // 2. Check active cached accounts
   const accounts = instance.getAllAccounts();
   if (accounts.length > 0) {
     try {
-      // Silently acquire a fresh token to verify the session is still valid
       const response = await instance.acquireTokenSilent({
         scopes: SCOPES,
         account: accounts[0],
       });
       return extractAccountInfo(response);
     } catch {
-      // Silent token failed → session expired, user needs to login again
-      return null;
+      const acc = accounts[0];
+      return {
+        username: acc.username || acc.name,
+        displayName: acc.name || acc.username,
+        token: localStorage.getItem("atlas_token") || null,
+      };
     }
   }
   return null;
@@ -98,7 +117,6 @@ export async function checkExistingSession() {
 
 /**
  * Logout: Clears MSAL session and local storage.
- * Uses account.logoutHint to skip Microsoft's "which account?" screen.
  */
 export async function logoutFromMicrosoft() {
   try {
