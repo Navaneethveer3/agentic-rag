@@ -1,7 +1,7 @@
 import { PublicClientApplication } from "@azure/msal-browser";
 import { getAuthConfig } from "./api";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // Fallback configuration if backend config is unavailable
 const FALLBACK_CLIENT_ID = "7374bd15-ba19-4a5b-982e-c5eb3de952de";
@@ -32,7 +32,7 @@ export async function initMsal() {
         sessionStorage.removeItem(key);
       }
     }
-  } catch (_) {}
+  } catch (_) { }
 
   const msalConfig = {
     auth: {
@@ -68,7 +68,7 @@ export const LOGIN_REQUEST = {
 export async function loginWithMicrosoftRedirect(loginHint = "") {
   try {
     sessionStorage.removeItem("msal.interaction.status");
-  } catch (_) {}
+  } catch (_) { }
 
   const instance = await initMsal();
   const request = {
@@ -126,7 +126,7 @@ export async function loginWithEntraBackend() {
 export async function loginWithMicrosoftSSO(loginHint = "") {
   try {
     sessionStorage.removeItem("msal.interaction.status");
-  } catch (_) {}
+  } catch (_) { }
 
   let instance;
   try {
@@ -229,6 +229,6 @@ export async function logoutMicrosoftSSO() {
       localStorage.removeItem("atlas_username");
       localStorage.removeItem("atlas_display_name");
       sessionStorage.clear();
-    } catch (_) {}
+    } catch (_) { }
   }
 }
