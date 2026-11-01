@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import List, Optional
 from dotenv import load_dotenv
 
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Header
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
@@ -41,7 +41,11 @@ from backend.get_user import get_current_user
 
 load_dotenv()
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
+raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
+if raw_origins and raw_origins != "*":
+    origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+else:
+    origins = ["*"]
 
 app = FastAPI(
     title="Agentic RAG API",
@@ -49,10 +53,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[ALLOWED_ORIGINS],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -84,19 +87,26 @@ def get_auth_config():
 
 
 @app.post("/api/auth/entra/login", tags=["Auth"])
-def api_entra_login():
+def api_entra_login(payload: Optional[dict] = None, x_username: Optional[str] = Header(None)):
     """
-    Performs interactive Microsoft Entra ID authentication via MSAL.
+    Performs Microsoft Entra ID authentication via MSAL directly on the backend.
     Returns user details and access token upon successful authentication.
     """
     try:
         from auth.entra_auth import login_with_entra
-        user_info = login_with_entra()
+        username = None
+        if payload and "username" in payload:
+            username = payload["username"]
+        elif x_username:
+            username = x_username
+
+        user_info = login_with_entra(username=username)
         return {
             "status": "success",
             "username": user_info.get("username"),
             "name": user_info.get("name"),
             "oid": user_info.get("oid"),
+            "token": user_info.get("token"),
         }
     except Exception as e:
         raise HTTPException(

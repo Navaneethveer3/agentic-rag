@@ -17,7 +17,7 @@
   background: var(--bg-primary);
 }
 
-/* Top bar for theme toggle */
+/* Top bar for theme toggle & watermark */
 .main-panel-top-bar {
   display: flex;
   align-items: center;
@@ -25,6 +25,28 @@
   padding: 14px 24px 0;
   flex-shrink: 0;
   z-index: 20;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-watermark {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+  opacity: 0.75;
+  user-select: none;
+  font-family: 'Inter', sans-serif;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+.app-watermark:hover {
+  opacity: 1;
+  color: var(--primary-accent);
 }
 
 .welcome-view-wrapper {
@@ -116,6 +138,9 @@
   top: 20px;
   right: 24px;
   z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .login-glow {

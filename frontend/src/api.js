@@ -22,6 +22,7 @@ export async function loginWithBackend(username) {
       "Content-Type": "application/json",
       ...(username ? { "X-Username": username } : {}),
     },
+    body: JSON.stringify({ username }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

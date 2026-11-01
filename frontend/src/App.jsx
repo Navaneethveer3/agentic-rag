@@ -14,8 +14,8 @@ import {
   updateChat,
   sendMessage,
   parseDocuments,
+  loginWithBackend,
 } from "./api";
-import { loginWithMicrosoftRedirect, handleRedirectAuth } from "./authService";
 import "./App.css";
 
 const CHEVRON_DOWN_ICON = (
@@ -80,27 +80,6 @@ export default function App() {
     }
     window.addEventListener("storage", handleStorageEvent);
     return () => window.removeEventListener("storage", handleStorageEvent);
-  }, []);
-
-  // Check if page loaded from redirect login return
-  useEffect(() => {
-    async function checkRedirectReturn() {
-      try {
-        const res = await handleRedirectAuth();
-        if (res && res.username) {
-          localStorage.setItem("atlas_username", res.username);
-          if (res.token) localStorage.setItem("atlas_token", res.token);
-          setUsername(res.username);
-          setLoggedIn(true);
-          if (window.location.hash) {
-            window.history.replaceState(null, "", window.location.pathname);
-          }
-        }
-      } catch (err) {
-        console.warn("Redirect check info:", err);
-      }
-    }
-    checkRedirectReturn();
   }, []);
 
   // Handle dynamic scrolling
@@ -172,20 +151,28 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  // Authenticate user via Microsoft Entra ID cloud redirect
+  // Authenticate user directly via backend (single-page, zero redirects)
   async function handleLogin(e) {
     if (e) e.preventDefault();
     if (authLoading) return;
 
+    const enteredUsername = loginInput.trim() || "User";
     setAuthLoading(true);
     setAuthError("");
 
     try {
-      // Initiates full-page redirect to Microsoft Entra ID login
-      await loginWithMicrosoftRedirect(loginInput.trim());
+      const res = await loginWithBackend(enteredUsername);
+      const user = res.username || enteredUsername;
+      localStorage.setItem("atlas_username", user);
+      if (res.token) {
+        localStorage.setItem("atlas_token", res.token);
+      }
+      setUsername(user);
+      setLoggedIn(true);
     } catch (err) {
-      console.error("Microsoft redirect error:", err);
-      setAuthError(err.message || "Failed to redirect to Microsoft Entra ID.");
+      console.error("Backend authentication error:", err);
+      setAuthError(err.message || "Failed to sign in. Please try again.");
+    } finally {
       setAuthLoading(false);
     }
   }
@@ -380,6 +367,7 @@ export default function App() {
     return (
       <div className="login-screen">
         <div className="login-top-bar">
+          <span className="app-watermark">-Navaneeth veer</span>
           <ThemeToggle theme={theme} onToggle={handleToggleTheme} />
         </div>
         <div className="login-glow" />
@@ -404,14 +392,14 @@ export default function App() {
             <input
               className="login-input"
               type="text"
-              placeholder="Enter Microsoft email (optional hint)"
+              placeholder="Enter username or email"
               value={loginInput}
               onChange={(e) => setLoginInput(e.target.value)}
               disabled={authLoading}
               autoFocus
             />
             <button className="login-btn" type="submit" disabled={authLoading}>
-              {authLoading ? "Redirecting to Microsoft..." : "Sign In with Microsoft"}
+              {authLoading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
@@ -440,6 +428,7 @@ export default function App() {
         {/* Top-right theme switcher bar */}
         <div className="main-panel-top-bar">
           <div className="top-bar-right">
+            <span className="app-watermark">-Navaneeth veer</span>
             <ThemeToggle theme={theme} onToggle={handleToggleTheme} />
           </div>
         </div>

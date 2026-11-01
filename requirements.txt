@@ -24,3 +24,5 @@ langmem
 beautifulsoup4
 docx2txt
 tavily-python
+langchain-huggingface
+pyjwt
