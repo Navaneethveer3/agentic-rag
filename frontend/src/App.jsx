@@ -7,7 +7,6 @@ import WelcomeScreen from "./components/WelcomeScreen";
 import ThemeToggle from "./components/ThemeToggle";
 import { DEFAULT_MODEL_ID } from "./models";
 import {
-  loginWithBackend,
   getAllChats,
   getChatMessages,
   createChat,
@@ -16,6 +15,7 @@ import {
   sendMessage,
   parseDocuments,
 } from "./api";
+import { loginWithMicrosoftRedirect, handleRedirectAuth } from "./authService";
 import "./App.css";
 
 const CHEVRON_DOWN_ICON = (
@@ -86,7 +86,6 @@ export default function App() {
   useEffect(() => {
     async function checkRedirectReturn() {
       try {
-        const { handleRedirectAuth } = await import("./authService");
         const res = await handleRedirectAuth();
         if (res && res.username) {
           localStorage.setItem("atlas_username", res.username);
@@ -173,25 +172,20 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  // Authenticate user via backend Microsoft Entra ID
+  // Authenticate user via Microsoft Entra ID cloud redirect
   async function handleLogin(e) {
-    e.preventDefault();
-    const name = loginInput.trim();
-    if (!name || authLoading) return;
+    if (e) e.preventDefault();
+    if (authLoading) return;
 
     setAuthLoading(true);
     setAuthError("");
 
     try {
-      const result = await loginWithBackend(name);
-      const authenticatedUser = result?.username || name;
-      localStorage.setItem("atlas_username", authenticatedUser);
-      setUsername(authenticatedUser);
-      setLoggedIn(true);
+      // Initiates full-page redirect to Microsoft Entra ID login
+      await loginWithMicrosoftRedirect(loginInput.trim());
     } catch (err) {
-      console.error("Backend Entra authentication error:", err);
-      setAuthError(err.message || "Microsoft Entra ID authentication failed on backend.");
-    } finally {
+      console.error("Microsoft redirect error:", err);
+      setAuthError(err.message || "Failed to redirect to Microsoft Entra ID.");
       setAuthLoading(false);
     }
   }
@@ -410,14 +404,14 @@ export default function App() {
             <input
               className="login-input"
               type="text"
-              placeholder="Enter your username (e.g. tester1)"
+              placeholder="Enter Microsoft email (optional hint)"
               value={loginInput}
               onChange={(e) => setLoginInput(e.target.value)}
               disabled={authLoading}
               autoFocus
             />
-            <button className="login-btn" type="submit" disabled={!loginInput.trim() || authLoading}>
-              {authLoading ? "Authenticating with Microsoft..." : "Sign In"}
+            <button className="login-btn" type="submit" disabled={authLoading}>
+              {authLoading ? "Redirecting to Microsoft..." : "Sign In with Microsoft"}
             </button>
           </form>
 
