@@ -18,9 +18,8 @@ import {
   logoutBackend,
 } from "./api";
 import {
-  loginWithMicrosoft,
-  checkExistingSession,
-  logoutFromMicrosoft,
+  loginWithMicrosoftRedirect,
+  logoutUser,
 } from "./authService";
 import "./App.css";
 
@@ -88,26 +87,14 @@ export default function App() {
     return () => window.removeEventListener("storage", handleStorageEvent);
   }, []);
 
-  // Check if page loaded from Microsoft Entra ID redirect or has an active session
+  // Ensure username and login state stay synchronized
   useEffect(() => {
-    async function initSession() {
-      try {
-        const res = await checkExistingSession();
-        if (res && res.username) {
-          localStorage.setItem("atlas_username", res.username);
-          if (res.token) localStorage.setItem("atlas_token", res.token);
-          setUsername(res.username);
-          setLoggedIn(true);
-          if (window.location.hash) {
-            window.history.replaceState(null, "", window.location.pathname);
-          }
-        }
-      } catch (err) {
-        console.warn("Session check notice:", err);
-      }
+    const savedUser = localStorage.getItem("atlas_username");
+    if (savedUser && !username) {
+      setUsername(savedUser);
+      setLoggedIn(true);
     }
-    initSession();
-  }, []);
+  }, [username]);
 
   // Handle dynamic scrolling
   const handleScroll = useCallback(() => {
@@ -178,7 +165,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  // Authenticate user via Microsoft Entra ID
+  // Authenticate user via Microsoft Entra ID (Single-page redirect: zero popups, zero new tabs)
   async function handleLogin(e) {
     if (e) e.preventDefault();
     if (authLoading) return;
@@ -187,37 +174,11 @@ export default function App() {
     setAuthError("");
 
     try {
-      // 1. Interactive Microsoft Entra ID authentication (popup or redirect)
-      const authResult = await loginWithMicrosoft(loginInput.trim());
-      if (!authResult) {
-        // Redirect fallback was initiated
-        return;
-      }
-
-      const { username: msUsername, token: msToken } = authResult;
-
-      // 2. Validate/register session with backend
-      let effectiveUsername = msUsername;
-      try {
-        const backendRes = await loginWithBackend(msUsername, msToken);
-        if (backendRes?.username) {
-          effectiveUsername = backendRes.username;
-        }
-      } catch (backendErr) {
-        console.warn("Backend session record notice:", backendErr);
-      }
-
-      // 3. Store active credentials
-      localStorage.setItem("atlas_username", effectiveUsername);
-      if (msToken) {
-        localStorage.setItem("atlas_token", msToken);
-      }
-      setUsername(effectiveUsername);
-      setLoggedIn(true);
+      await loginWithMicrosoftRedirect(loginInput.trim());
+      // Page redirects in the same tab to Microsoft; execution completes upon return
     } catch (err) {
-      console.error("Microsoft Entra ID authentication error:", err);
-      setAuthError(err.message || "Microsoft Entra ID authentication failed. Please try again.");
-    } finally {
+      console.error("Microsoft Entra ID redirect error:", err);
+      setAuthError(err.message || "Failed to redirect to Microsoft. Please try again.");
       setAuthLoading(false);
     }
   }
@@ -226,7 +187,7 @@ export default function App() {
     try {
       await logoutBackend();
     } catch (_) {}
-    await logoutFromMicrosoft();
+    await logoutUser();
     setUsername("");
     setLoggedIn(false);
     setChats([]);
@@ -452,7 +413,7 @@ export default function App() {
                 <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
                 <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
               </svg>
-              {authLoading ? "Authenticating with Microsoft..." : "Sign In with Microsoft"}
+              {authLoading ? "Redirecting to Microsoft..." : "Sign In with Microsoft"}
             </button>
           </form>
 

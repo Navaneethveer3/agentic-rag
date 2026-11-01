@@ -23,7 +23,7 @@ export async function initMsal() {
         authority: `https://login.microsoftonline.com/${TENANT_ID}`,
         redirectUri: window.location.origin,
         postLogoutRedirectUri: window.location.origin,
-        navigateToLoginRequestUrl: false, // Critical for popups: prevents popup from navigating to home page
+        navigateToLoginRequestUrl: false,
       },
       cache: {
         cacheLocation: "localStorage",
@@ -33,7 +33,6 @@ export async function initMsal() {
 
     const instance = new PublicClientApplication(config);
     await instance.initialize();
-
     msalInstance = instance;
     return instance;
   })();
@@ -42,11 +41,40 @@ export async function initMsal() {
 }
 
 /**
- * Login: Opens Microsoft Entra ID popup. User enters their Microsoft credentials.
- * Returns { username, displayName, token } on success.
- * Falls back to redirect if popups are blocked.
+ * Handles the return from Microsoft Entra ID redirect in the same tab.
+ * Extracts tokens and user profile without opening any popups or new windows.
  */
-export async function loginWithMicrosoft(loginHint = "") {
+export async function handleRedirectAuth() {
+  const instance = await initMsal();
+
+  try {
+    const response = await instance.handleRedirectPromise();
+    if (response && response.account) {
+      return extractAccountInfo(response);
+    }
+  } catch (err) {
+    console.error("handleRedirectPromise error:", err);
+  }
+
+  // Check cached accounts if already logged in
+  const accounts = instance.getAllAccounts();
+  if (accounts.length > 0) {
+    const acc = accounts[0];
+    return {
+      username: acc.username || acc.name,
+      displayName: acc.name || acc.username,
+      token: localStorage.getItem("atlas_token") || null,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Single-page redirect login: Current tab navigates to Microsoft Entra ID.
+ * ZERO popups, ZERO new tabs.
+ */
+export async function loginWithMicrosoftRedirect(loginHint = "") {
   try {
     sessionStorage.removeItem("msal.interaction.status");
     localStorage.removeItem("msal.interaction.status");
@@ -59,77 +87,27 @@ export async function loginWithMicrosoft(loginHint = "") {
     prompt: "select_account",
     redirectUri: window.location.origin,
   };
-  if (loginHint) request.loginHint = loginHint;
-
-  try {
-    const response = await instance.loginPopup(request);
-    return extractAccountInfo(response);
-  } catch (err) {
-    if (
-      err.errorCode === "user_cancelled" ||
-      err.name === "BrowserAuthError" && err.message?.includes("user_cancelled")
-    ) {
-      throw new Error("Microsoft sign-in was cancelled.");
-    }
-    console.warn("Popup blocked or failed, using redirect fallback:", err.errorCode || err.message);
-    await instance.loginRedirect(request);
-    return null; // Page will redirect
+  if (loginHint && loginHint.trim()) {
+    request.loginHint = loginHint.trim();
   }
+
+  // Navigates the current page to Microsoft Entra ID
+  return instance.loginRedirect(request);
 }
 
 /**
- * Check if the user is returning from a redirect login or has an existing session.
- * Call once on app mount. Returns account info or null.
+ * Clean logout: clears MSAL accounts and local storage.
+ * Stays on the same page in the current tab.
  */
-export async function checkExistingSession() {
-  const instance = await initMsal();
-
-  // 1. Check if returning from a full-page redirect
-  try {
-    const redirectResponse = await instance.handleRedirectPromise();
-    if (redirectResponse && redirectResponse.account) {
-      return extractAccountInfo(redirectResponse);
-    }
-  } catch (err) {
-    console.warn("Redirect processing notice:", err);
-  }
-
-  // 2. Check active cached accounts
-  const accounts = instance.getAllAccounts();
-  if (accounts.length > 0) {
-    try {
-      const response = await instance.acquireTokenSilent({
-        scopes: SCOPES,
-        account: accounts[0],
-      });
-      return extractAccountInfo(response);
-    } catch {
-      const acc = accounts[0];
-      return {
-        username: acc.username || acc.name,
-        displayName: acc.name || acc.username,
-        token: localStorage.getItem("atlas_token") || null,
-      };
-    }
-  }
-  return null;
-}
-
-/**
- * Logout: Clears MSAL session and local storage.
- */
-export async function logoutFromMicrosoft() {
+export async function logoutUser() {
   try {
     const instance = await initMsal();
     const accounts = instance.getAllAccounts();
-    if (accounts.length > 0) {
-      await instance.logoutPopup({
-        account: accounts[0],
-        mainWindowRedirectUri: window.location.origin,
-      });
+    for (const acc of accounts) {
+      await instance.clearCache({ account: acc }).catch(() => {});
     }
   } catch (err) {
-    console.warn("Logout notice:", err.message);
+    console.warn("Logout notice:", err);
   } finally {
     localStorage.removeItem("atlas_token");
     localStorage.removeItem("atlas_username");
@@ -137,9 +115,6 @@ export async function logoutFromMicrosoft() {
   }
 }
 
-/**
- * Extract standardized user info from an MSAL auth response.
- */
 function extractAccountInfo(response) {
   const account = response.account;
   const token = response.idToken || response.accessToken || null;
