@@ -87,20 +87,31 @@ def get_auth_config():
 
 
 @app.post("/api/auth/entra/login", tags=["Auth"])
-def api_entra_login(payload: Optional[dict] = None, x_username: Optional[str] = Header(None)):
+def api_entra_login(
+    payload: Optional[dict] = None,
+    x_username: Optional[str] = Header(None),
+    authorization: Optional[str] = Header(None),
+):
     """
-    Performs Microsoft Entra ID authentication via MSAL directly on the backend.
-    Returns user details and access token upon successful authentication.
+    Performs Microsoft Entra ID session verification directly on the backend without CLIENT_SECRET.
+    Validates user credentials from token / payload.
     """
     try:
         from auth.entra_auth import login_with_entra
         username = None
-        if payload and "username" in payload:
-            username = payload["username"]
-        elif x_username:
+        token = None
+
+        if payload:
+            username = payload.get("username")
+            token = payload.get("token")
+
+        if not username and x_username:
             username = x_username
 
-        user_info = login_with_entra(username=username)
+        if not token and authorization and authorization.startswith("Bearer "):
+            token = authorization.split(" ")[1]
+
+        user_info = login_with_entra(token=token, username=username)
         return {
             "status": "success",
             "username": user_info.get("username"),
@@ -113,6 +124,12 @@ def api_entra_login(payload: Optional[dict] = None, x_username: Optional[str] = 
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Microsoft Entra ID authentication failed: {str(e)}"
         )
+
+
+@app.post("/api/auth/logout", tags=["Auth"])
+def api_logout(username: str = Depends(get_current_user)):
+    """Logs out user session on the backend."""
+    return {"status": "success", "message": f"Successfully logged out {username}"}
 
 
 

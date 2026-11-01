@@ -15,10 +15,11 @@ import {
   sendMessage,
   parseDocuments,
   loginWithBackend,
+  logoutBackend,
 } from "./api";
 import {
   loginWithMicrosoft,
-  handleRedirectAuth,
+  checkExistingSession,
   logoutFromMicrosoft,
 } from "./authService";
 import "./App.css";
@@ -87,11 +88,11 @@ export default function App() {
     return () => window.removeEventListener("storage", handleStorageEvent);
   }, []);
 
-  // Check if page loaded from Microsoft Entra ID redirect
+  // Check if page loaded from Microsoft Entra ID redirect or has an active session
   useEffect(() => {
-    async function checkRedirect() {
+    async function initSession() {
       try {
-        const res = await handleRedirectAuth();
+        const res = await checkExistingSession();
         if (res && res.username) {
           localStorage.setItem("atlas_username", res.username);
           if (res.token) localStorage.setItem("atlas_token", res.token);
@@ -102,10 +103,10 @@ export default function App() {
           }
         }
       } catch (err) {
-        console.warn("Redirect check notice:", err);
+        console.warn("Session check notice:", err);
       }
     }
-    checkRedirect();
+    initSession();
   }, []);
 
   // Handle dynamic scrolling
@@ -222,6 +223,9 @@ export default function App() {
   }
 
   async function handleLogout() {
+    try {
+      await logoutBackend();
+    } catch (_) {}
     await logoutFromMicrosoft();
     setUsername("");
     setLoggedIn(false);

@@ -33,6 +33,18 @@ export async function loginWithBackend(username, token = null) {
   return res.json();
 }
 
+export async function logoutBackend() {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/logout`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn("Backend logout notice:", err);
+  }
+}
+
 export async function healthCheck() {
   const res = await fetch(`${API_BASE}/api/health`);
   if (!res.ok) throw new Error("API unreachable");
