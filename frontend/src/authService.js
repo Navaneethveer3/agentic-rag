@@ -121,95 +121,48 @@ export async function loginWithEntraBackend() {
 }
 
 /**
- * Popup login fallback.
+ * In-page Microsoft Entra ID Popup Login
+ * Authenticates with Microsoft, returns verified token, and keeps user on current page.
  */
 export async function loginWithMicrosoftSSO(loginHint = "") {
   try {
     sessionStorage.removeItem("msal.interaction.status");
-  } catch (_) { }
-
-  let instance;
-  try {
-    instance = await initMsal();
-  } catch (initErr) {
-    console.warn("MSAL initialization failed, using backend SSO fallback:", initErr);
-    return await loginWithEntraBackend();
-  }
-
-  return new Promise(async (resolve, reject) => {
-    let completed = false;
-
-    const timer = setTimeout(() => {
-      if (!completed) {
-        completed = true;
-        reject(new Error("Login timed out or was closed. Please try again."));
-      }
-    }, 45000);
-
-    try {
-      const request = { ...LOGIN_REQUEST };
-      if (loginHint) request.loginHint = loginHint;
-
-      const popupPromise = instance.loginPopup(request);
-
-      popupPromise
-        .then((response) => {
-          if (completed) return;
-          completed = true;
-          clearTimeout(timer);
-
-          const account = response.account;
-          const token = response.idToken || response.accessToken;
-          const username = account.username || account.name || "authenticated_user";
-          const displayName = account.name || username;
-
-          resolve({
-            username,
-            displayName,
-            token,
-          });
-        })
-        .catch(async (popupErr) => {
-          if (completed) return;
-          console.warn("Browser MSAL popup encountered an error:", popupErr);
-
-          if (
-            popupErr.errorCode === "user_cancelled" ||
-            (popupErr.name === "BrowserAuthError" && popupErr.message?.includes("user_cancelled"))
-          ) {
-            completed = true;
-            clearTimeout(timer);
-            return reject(new Error("Login was cancelled."));
-          }
-
-          try {
-            console.log("Attempting backend Entra ID login fallback...");
-            const backendUser = await loginWithEntraBackend();
-            completed = true;
-            clearTimeout(timer);
-            resolve({
-              username: backendUser.username,
-              displayName: backendUser.name || backendUser.username,
-              token: null,
-            });
-          } catch (backendErr) {
-            completed = true;
-            clearTimeout(timer);
-            reject(
-              new Error(
-                popupErr.message || backendErr.message || "Microsoft SSO authentication failed. Please try again."
-              )
-            );
-          }
-        });
-    } catch (err) {
-      if (!completed) {
-        completed = true;
-        clearTimeout(timer);
-        reject(err);
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.includes("interaction.status")) {
+        sessionStorage.removeItem(key);
       }
     }
-  });
+  } catch (_) { }
+
+  const instance = await initMsal();
+
+  const request = {
+    ...LOGIN_REQUEST,
+  };
+  if (loginHint && loginHint.trim()) {
+    request.loginHint = loginHint.trim();
+  }
+
+  try {
+    const response = await instance.loginPopup(request);
+    const account = response.account;
+    const token = response.idToken || response.accessToken;
+    const username = account.username || account.name || "authenticated_user";
+    const displayName = account.name || username;
+
+    return {
+      username,
+      displayName,
+      token,
+    };
+  } catch (err) {
+    console.error("Microsoft Entra ID login error:", err);
+    if (err.errorCode === "user_cancelled" || err.message?.includes("user_cancelled")) {
+      throw new Error("Login was cancelled by user.");
+    }
+    throw new Error(err.message || "Microsoft Entra ID authentication failed.");
+  }
 }
 
 export async function logoutMicrosoftSSO() {
