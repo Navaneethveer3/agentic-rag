@@ -2,6 +2,11 @@
 
 > A production-deployed agentic RAG system that retrieves, reranks, and grades information from documents, the web, and specific URLs before answering, so responses stay accurate and grounded. Secured with Microsoft Entra ID and hosted on Azure.
 
+[![CI/CD](https://github.com/Navaneethveer3/agentic-rag/actions/workflows/azure-static-web-apps-gentle-mud-0453d7300.yml/badge.svg)](https://github.com/Navaneethveer3/agentic-rag/actions)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Azure-0078D4?logo=microsoftazure&logoColor=white)](https://gentle-mud-0453d7300.3.azurestaticapps.net/)
+
+[Repository](https://github.com/Navaneethveer3/agentic-rag) · [Live Demo](https://gentle-mud-0453d7300.3.azurestaticapps.net/)
+
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
@@ -225,6 +230,15 @@ CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 </details>
+
+## 🔄 CI/CD
+
+Every push to `main` triggers a GitHub Actions workflow that builds and deploys automatically to Azure:
+
+- **Frontend:** built and deployed to Azure Static Web Apps
+- **Backend:** Docker image built, pushed to Azure Container Registry, and deployed to Azure App Service
+
+Pull requests get automatic preview builds of the frontend. <!-- keep this line only if your workflow has PR previews, which Static Web Apps usually does -->
 
 ## ☁️ Deploying to Azure
 
